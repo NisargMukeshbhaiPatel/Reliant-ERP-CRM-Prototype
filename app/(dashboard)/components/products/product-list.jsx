@@ -60,72 +60,60 @@ export default function ProductList({ products }) {
 
   const handleSubmit = async (userSelection) => {
     console.log("User submitted:", userSelection);
-    setIsLoadingNextPage(true);
 
-    try {
-      const stepData = {
-        pageId: currentPageData.id,
-        pageTitle: currentPageData.title,
-        pageType: currentPageData.type,
-        userInput: userSelection,
-        timestamp: new Date().toISOString()
-      };
+    const stepData = {
+      pageId: currentPageData.id,
+      pageTitle: currentPageData.title,
+      pageType: currentPageData.type,
+      userInput: userSelection,
+      timestamp: new Date().toISOString()
+    };
 
-      const updatedFlowStack = [...flowStack];
-      const currentBranch = updatedFlowStack[updatedFlowStack.length - 1];
-      currentBranch.completedSteps.push(stepData);
+    const updatedFlowStack = [...flowStack];
+    const currentBranch = updatedFlowStack[updatedFlowStack.length - 1];
+    currentBranch.completedSteps.push(stepData);
 
-      // determine next actions based on page type and user input
-      if (currentPageData.type === "SELECTION") {
-        // Check if selected item has next_pages
-        if (userSelection.next_pages && userSelection.next_pages.length > 0) {
-          console.log("Selected item has next_pages:", userSelection.next_pages);
+    // Determine next actions based on page type and user input
+    if (currentPageData.type === "SELECTION") {
+      if (userSelection.next_pages && userSelection.next_pages.length > 0) {
+        console.log("Selected item has next_pages:", userSelection.next_pages);
 
-          const newBranch = {
-            pages: userSelection.next_pages,
-            currentIndex: 0,
-            completedSteps: []
-          };
-          updatedFlowStack.push(newBranch);
+        const newBranch = {
+          pages: userSelection.next_pages,
+          currentIndex: 0,
+          completedSteps: []
+        };
+        updatedFlowStack.push(newBranch);
 
-          // Add current page's next_pages to current branch (for after selection branch completes)
-          if (currentPageData.next_pages && currentPageData.next_pages.length > 0) {
-            console.log("Also queuing current page's next_pages:", currentPageData.next_pages);
-            currentBranch.pages.push(...currentPageData.next_pages);
-          }
-
-          setFlowStack(updatedFlowStack);
-
-          await loadPageById(userSelection.next_pages[0]);
-          return;
-        } else if (currentPageData.next_pages && currentPageData.next_pages.length > 0) {
-          // Selected item has no next_pages, but current page does
-          console.log("Adding current page's next_pages:", currentPageData.next_pages);
-          currentBranch.pages.push(...currentPageData.next_pages);
-        }
-      } else if (currentPageData.type === "NUMBER" || currentPageData.type === "TEXT") {
-        // For number/text pages, add page's next_pages
+        // Add current page's next_pages to current branch (for after selection branch completes)
         if (currentPageData.next_pages && currentPageData.next_pages.length > 0) {
-          console.log("Adding page's next_pages:", currentPageData.next_pages);
+          console.log("Also queuing current page's next_pages:", currentPageData.next_pages);
           currentBranch.pages.push(...currentPageData.next_pages);
         }
-      }
 
-      setFlowStack(updatedFlowStack);
-      await moveToNextPage();
-    } catch (error) {
-      console.error("Error in handleSubmit:", error);
-      toast({
-        title: "Error processing selection",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingNextPage(false);
+        setFlowStack(updatedFlowStack);
+
+        await loadPageById(userSelection.next_pages[0]);
+        return;
+      } else if (currentPageData.next_pages && currentPageData.next_pages.length > 0) {
+        // Selected item has no next_pages, but current page does
+        console.log("Adding current page's next_pages:", currentPageData.next_pages);
+        currentBranch.pages.push(...currentPageData.next_pages);
+      }
+    } else if (currentPageData.type === "NUMBER" || currentPageData.type === "TEXT") {
+      // For number/text pages, add page's next_pages
+      if (currentPageData.next_pages && currentPageData.next_pages.length > 0) {
+        console.log("Adding page's next_pages:", currentPageData.next_pages);
+        currentBranch.pages.push(...currentPageData.next_pages);
+      }
     }
+
+    setFlowStack(updatedFlowStack);
+    await moveToNextPage();
   };
 
   const loadPageById = async (pageId) => {
+    setIsLoadingNextPage(true);
     try {
       const pageData = await getProdPageById(pageId);
       console.log("Loaded page:", pageData);
@@ -136,14 +124,23 @@ export default function ProductList({ products }) {
         title: `Error loading page: ${error.message}`,
         variant: "destructive",
       });
-      throw error; // Re-throw to be handled by caller
+    } finally {
+      setIsLoadingNextPage(false);
     }
   };
 
-  const moveToNextPage = async () => {
-    const currentBranch = flowStack[flowStack.length - 1];
+  const moveToNextPage = async (stackOverride = null) => {
+    console.log("=== MOVE TO NEXT PAGE START ===");
+
+    // Use provided stack or current state
+    const currentStack = stackOverride || flowStack;
+    const currentBranch = currentStack[currentStack.length - 1];
+
+    console.log("Using stack:", currentStack);
+    console.log("Current branch:", currentBranch);
 
     if (!currentBranch) {
+      console.log("No current branch, completing flow");
       await completeFlow();
       return;
     }
@@ -155,16 +152,21 @@ export default function ProductList({ products }) {
       const nextPageId = currentBranch.pages[nextIndex];
 
       console.log(`Moving to next page in branch: ${nextPageId} (index ${nextIndex})`);
+      console.log(`Branch has ${currentBranch.pages.length} pages:`, currentBranch.pages);
 
-      // Update index
-      const updatedFlowStack = [...flowStack];
-      updatedFlowStack[updatedFlowStack.length - 1].currentIndex = nextIndex;
+      // Update index in the stack we're working with
+      const updatedFlowStack = [...currentStack];
+      updatedFlowStack[updatedFlowStack.length - 1] = {
+        ...updatedFlowStack[updatedFlowStack.length - 1],
+        currentIndex: nextIndex
+      };
+
       setFlowStack(updatedFlowStack);
-
       await loadPageById(nextPageId);
     } else {
       // Current branch is complete, backtrack
       console.log("Branch complete, backtracking");
+      console.log(`Branch had ${currentBranch.pages.length} pages, completed index: ${currentBranch.currentIndex}`);
       await backtrackToParent();
     }
   };
@@ -173,95 +175,79 @@ export default function ProductList({ products }) {
     const completedBranch = flowStack[flowStack.length - 1];
     const remainingStack = flowStack.slice(0, -1);
 
+    console.log("Completed branch:", completedBranch);
+    console.log("Remaining stack:", remainingStack);
+
     // Add completed branch data to overall flow data
     setAllFlowData(prev => [...prev, ...completedBranch.completedSteps]);
 
     if (remainingStack.length === 0) {
-      // No more branches, flow is complete
+      console.log("No more branches, completing flow");
       await completeFlow();
       return;
     }
 
-    // Continue with parent branch
     setFlowStack(remainingStack);
-    await moveToNextPage();
+
+    // Move to next page in parent branch, passing the updated stack
+    await moveToNextPage(remainingStack);
   };
 
   const completeFlow = async () => {
-    // Collect all remaining data
     const finalData = [...allFlowData];
 
-    // Add any remaining branch data
     flowStack.forEach(branch => {
       finalData.push(...branch.completedSteps);
     });
 
-    console.log("🎉 Flow completed!");
-    console.log("Final flow data:", finalData);
-
     const submissionData = {
       productId: selectedProduct.id,
-      productName: selectedProduct.name,
+      productTitle: selectedProduct.title,
+      productImage: selectedProduct.image,
       userSelections: finalData,
-      completedAt: new Date().toISOString(),
     };
 
     console.log("Submission data:", submissionData);
 
-    // TODO: Submit to your backend
-    // await submitProductConfiguration(submissionData);
+    // TODO: Submit to Backend
 
     toast({
-      title: "Configuration completed successfully!",
-      description: `Completed ${finalData.length} steps`,
+      title: "Quotation selected successfully!",
     });
 
     handleDialogClose();
   };
 
   const handlePrevious = async () => {
-    setIsLoadingNextPage(true);
+    const currentBranch = flowStack[flowStack.length - 1];
 
-    try {
-      const currentBranch = flowStack[flowStack.length - 1];
+    if (!currentBranch) return;
 
-      if (!currentBranch) return;
+    if (currentBranch.currentIndex > 0) {
+      // Go back within current branch
+      const prevIndex = currentBranch.currentIndex - 1;
+      const prevPageId = currentBranch.pages[prevIndex];
 
-      if (currentBranch.currentIndex > 0) {
-        // Go back within current branch
-        const prevIndex = currentBranch.currentIndex - 1;
-        const prevPageId = currentBranch.pages[prevIndex];
+      // Remove last completed step from current branch
+      const updatedFlowStack = [...flowStack];
+      updatedFlowStack[updatedFlowStack.length - 1].completedSteps.pop();
+      updatedFlowStack[updatedFlowStack.length - 1].currentIndex = prevIndex;
+      setFlowStack(updatedFlowStack);
 
-        // Remove last completed step from current branch
-        const updatedFlowStack = [...flowStack];
-        updatedFlowStack[updatedFlowStack.length - 1].completedSteps.pop();
-        updatedFlowStack[updatedFlowStack.length - 1].currentIndex = prevIndex;
-        setFlowStack(updatedFlowStack);
+      await loadPageById(prevPageId);
+    } else if (flowStack.length > 1) {
+      // Go back to parent branch
+      const parentStack = flowStack.slice(0, -1);
+      const parentBranch = parentStack[parentStack.length - 1];
 
-        await loadPageById(prevPageId);
-      } else if (flowStack.length > 1) {
-        // Go back to parent branch
-        const parentStack = flowStack.slice(0, -1);
-        const parentBranch = parentStack[parentStack.length - 1];
+      // Remove last step from parent branch
+      parentBranch.completedSteps.pop();
 
-        // Remove last step from parent branch
-        parentBranch.completedSteps.pop();
+      setFlowStack(parentStack);
 
-        setFlowStack(parentStack);
-
-        // Load parent's current page
-        const parentPageId = parentBranch.pages[parentBranch.currentIndex];
-        await loadPageById(parentPageId);
-      }
-    } catch (error) {
-      console.error("Error in handlePrevious:", error);
-      toast({
-        title: "Error navigating backward",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingNextPage(false);
+      // Load parent's current page
+      const parentPageId = parentBranch.pages[parentBranch.currentIndex];
+      await loadPageById(parentPageId);
     }
   };
 
@@ -295,11 +281,11 @@ export default function ProductList({ products }) {
         {products.map((product) => (
           <Card key={product.id} onClick={() => handleProductClick(product)} className="group cursor-pointer">
             <CardContent className="p-0 flex flex-col h-full">
-              <div className="relative overflow-hidden rounded-t-3xl h-64">
+              <div className="relative overflow-hidden rounded-t-xl h-64">
                 <img
                   src={getProductImageUrl(product.collectionId, product.id, product.image)}
-                  alt={product.name}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  alt={product.title}
+                  className="w-full h-full rounded-t-xl object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
@@ -307,7 +293,7 @@ export default function ProductList({ products }) {
               <div className="p-8 flex flex-col flex-1">
                 <CardHeader className="p-0 mb-4">
                   <CardTitle className="text-2xl text-gray-800 group-hover:text-gray-900 transition-colors duration-200">
-                    {product.name}
+                    {product.title}
                   </CardTitle>
                 </CardHeader>
                 <p className="text-gray-600 text-base leading-relaxed mb-6 flex-1">
@@ -371,42 +357,25 @@ export default function ProductList({ products }) {
       {currentPageData && currentPageData.type === "TEXT" && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">{currentPageData.title}</h2>
-              {isLoadingNextPage && (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              )}
-            </div>
+            <h2 className="text-xl font-semibold mb-4">{currentPageData.title}</h2>
             <p className="text-gray-600 mb-4">{currentPageData.desc}</p>
             <input
               type="text"
               className="w-full p-2 border rounded mb-4"
               placeholder="Enter your text..."
               id="textInput"
-              disabled={isLoadingNextPage}
             />
             <div className="flex gap-2">
               {canGoBack() && (
-                <Button
-                  variant="outline"
-                  onClick={handlePrevious}
-                  className="flex-1"
-                  disabled={isLoadingNextPage}
-                >
-                  {isLoadingNextPage ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    "Previous"
-                  )}
+                <Button variant="outline" onClick={handlePrevious} className="flex-1">
+                  Previous
                 </Button>
               )}
               <Button
                 onClick={() => {
                   const textInput = document.getElementById('textInput');
                   const textValue = textInput ? textInput.value : '';
-                  if (textValue.trim()) {
-                    handleSubmit({ textValue });
-                  }
+                  handleSubmit({ textValue });
                 }}
                 className="flex-1"
                 disabled={isLoadingNextPage}
@@ -427,4 +396,3 @@ export default function ProductList({ products }) {
     </div>
   );
 }
-

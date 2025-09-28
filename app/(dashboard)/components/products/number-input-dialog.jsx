@@ -109,7 +109,10 @@ export function NumberInputDialog({
       product.number_inputs.forEach((input) => {
         const value = values[input.id]
         if (value) {
-          numericValues[input.id] = Number.parseFloat(value)
+          numericValues[input.id] = {
+            title: input.title,
+            value: Number.parseFloat(value)
+          }
         }
       })
 
@@ -151,7 +154,7 @@ export function NumberInputDialog({
     const rules = getValidationRules(input)
 
     if (rules.requiresPositive) {
-      return "Any value > 0"
+      return "Enter value"
     }
 
     return `${rules.min} - ${rules.max}`
@@ -161,7 +164,7 @@ export function NumberInputDialog({
     const rules = getValidationRules(input)
 
     if (rules.requiresPositive) {
-      return "Range: Any value > 0"
+      return "Range: Any Dimension"
     }
 
     return `Range: ${rules.min} - ${rules.max}`

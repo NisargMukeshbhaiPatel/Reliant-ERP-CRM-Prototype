@@ -93,12 +93,12 @@ export function SelectionDialog({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="mb-4 flex-1 overflow-y-auto rounded-3xl">
-          <div className="pt-4 px-6 pb-4 rounded-3xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <ScrollArea className="mb-4 flex-1 overflow-y-auto rounded-xl">
+          <div className="pt-4 px-6 pb-4 rounded-xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {product?.selections?.map((selection) => (
               <Card
                 key={selection.id}
-                className={`cursor-pointer transition-all hover:shadow-md ${selectedId === selection.id
+                className={`cursor-pointer transition-all hover:shadow-md overflow-hidden ${selectedId === selection.id
                   ? "ring-2 ring-primary border-primary"
                   : "hover:border-primary/50"
                   } ${(isLoading || isSubmitting) ? "opacity-50 pointer-events-none" : ""
