@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { getPageItemImageUrl } from "@/constants/pb";
 import {
   Dialog,
@@ -12,7 +12,7 @@ import {
 } from "@/components/dialog"
 import { Button } from "@/components/button"
 import { Card, CardContent } from "@/components/card"
-import { Check, ChevronLeft, ChevronRight } from "lucide-react"
+import { Check, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import { ScrollArea } from "@/components/scroll-area"
 
 export function SelectionDialog({
@@ -26,27 +26,47 @@ export function SelectionDialog({
   isLastStep = false,
   currentStep = 1,
   totalSteps = 1,
+  isLoading = false,
+  progressText = "",
 }) {
   const [selectedId, setSelectedId] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = () => {
-    if (selectedId) {
-      const selectedItem = product.selections.find((s) => s.id === selectedId)
-      onSubmit(selectedItem)
+  useEffect(() => {
+    setSelectedId("")
+    setIsSubmitting(false)
+  }, [product?.id])
+
+  const handleSubmit = async () => {
+    if (selectedId && !isSubmitting) {
+      setIsSubmitting(true)
+      try {
+        const selectedItem = product.selections.find((s) => s.id === selectedId)
+        await onSubmit(selectedItem)
+      } finally {
+        // don't reset isSubmitting here - let parent component handle state
+      }
     }
   }
 
   const handleClose = () => {
     setSelectedId("")
+    setIsSubmitting(false)
     onOpenChange(false)
   }
 
-  const handlePrevious = () => {
-    if (onPrevious) {
-      setSelectedId("")
-      onPrevious()
+  const handlePrevious = async () => {
+    if (onPrevious && !isSubmitting) {
+      setIsSubmitting(true)
+      try {
+        setSelectedId("")
+        await onPrevious()
+      } finally {
+      }
     }
   }
+
+  const isNextDisabled = !selectedId || isSubmitting || isLoading
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -54,25 +74,36 @@ export function SelectionDialog({
         <DialogHeader className="flex-shrink-0 pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-balance">{product.title}</DialogTitle>
-              <DialogDescription className="text-pretty">{product.description}</DialogDescription>
+              <DialogTitle className="text-balance">{product?.title}</DialogTitle>
+              <DialogDescription className="text-pretty">{product?.description}</DialogDescription>
             </div>
-            {totalSteps > 1 && (
-              <div className="text-sm text-muted-foreground bg-secondary px-3 py-1 rounded-full">
-                Step {currentStep} of {totalSteps}
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {(isLoading || isSubmitting) && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {isLoading ? "Loading..." : "Processing..."}
+                </div>
+              )}
+              {totalSteps > 1 && (
+                <div className="text-sm text-muted-foreground bg-secondary px-3 py-1 rounded-full">
+                  {progressText || `Step ${currentStep} of ${totalSteps}`}
+                </div>
+              )}
+            </div>
           </div>
         </DialogHeader>
 
         <ScrollArea className="mb-4 flex-1 overflow-y-auto rounded-3xl">
           <div className="pt-4 px-6 pb-4 rounded-3xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {product.selections.map((selection) => (
+            {product?.selections?.map((selection) => (
               <Card
                 key={selection.id}
-                className={`cursor-pointer transition-all hover:shadow-md ${selectedId === selection.id ? "ring-2 ring-primary border-primary" : "hover:border-primary/50"
+                className={`cursor-pointer transition-all hover:shadow-md ${selectedId === selection.id
+                  ? "ring-2 ring-primary border-primary"
+                  : "hover:border-primary/50"
+                  } ${(isLoading || isSubmitting) ? "opacity-50 pointer-events-none" : ""
                   }`}
-                onClick={() => setSelectedId(selection.id)}
+                onClick={() => !isLoading && !isSubmitting && setSelectedId(selection.id)}
               >
                 <CardContent className="p-0 h-full flex flex-col min-h-[31rem]">
                   {/* Image Section - Fixed Height */}
@@ -105,26 +136,48 @@ export function SelectionDialog({
         <DialogFooter className="flex-shrink-0 flex items-center justify-between">
           <div className="flex gap-2">
             {showPrevious && (
-              <Button variant="outline" onClick={handlePrevious}>
-                <ChevronLeft className="h-4 w-4 mr-1" />
+              <Button
+                variant="outline"
+                onClick={handlePrevious}
+                disabled={isSubmitting || isLoading}
+              >
+                {isSubmitting || isLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                )}
                 Previous
               </Button>
             )}
-            <Button variant="outline" onClick={handleClose}>
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              disabled={isSubmitting || isLoading}
+            >
               Cancel
             </Button>
           </div>
 
-          <Button onClick={handleSubmit} disabled={!selectedId}>
-            {showNext ? (
-              <>
-                {isLastStep ? "Complete" : "Next"}
-                {!isLastStep && <ChevronRight className="h-4 w-4 ml-1" />}
-              </>
-            ) : (
-              "Submit Selection"
-            )}
-          </Button>
+          <div className="flex flex-col items-end gap-1">
+            <Button
+              onClick={handleSubmit}
+              disabled={isNextDisabled}
+            >
+              {isSubmitting || isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {isSubmitting ? "Processing..." : "Loading..."}
+                </>
+              ) : showNext ? (
+                <>
+                  {isLastStep ? "Complete" : "Next"}
+                  {!isLastStep && <ChevronRight className="h-4 w-4 ml-1" />}
+                </>
+              ) : (
+                "Submit Selection"
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

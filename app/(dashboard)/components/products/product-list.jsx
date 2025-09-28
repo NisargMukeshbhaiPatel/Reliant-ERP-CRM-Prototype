@@ -16,9 +16,8 @@ export default function ProductList({ products }) {
   const [loadingProductId, setLoadingProductId] = useState(null);
   const [isLoadingNextPage, setIsLoadingNextPage] = useState(false);
 
-  // Flow management - simplified approach
-  const [flowStack, setFlowStack] = useState([]); // Stack of branches to explore
-  const [allFlowData, setAllFlowData] = useState([]); // All completed steps
+  const [flowStack, setFlowStack] = useState([]);
+  const [allFlowData, setAllFlowData] = useState([]);
 
   const { toast } = useToast();
 
@@ -32,7 +31,6 @@ export default function ProductList({ products }) {
       setCurrentPageData(pageData);
       setIsDialogOpen(true);
 
-      // Initialize with first page only
       setFlowStack([{
         pages: [pageData.id],
         currentIndex: 0,
@@ -62,65 +60,72 @@ export default function ProductList({ products }) {
 
   const handleSubmit = async (userSelection) => {
     console.log("User submitted:", userSelection);
+    setIsLoadingNextPage(true);
 
-    // Create step record
-    const stepData = {
-      pageId: currentPageData.id,
-      pageTitle: currentPageData.title,
-      pageType: currentPageData.type,
-      userInput: userSelection,
-      timestamp: new Date().toISOString()
-    };
+    try {
+      const stepData = {
+        pageId: currentPageData.id,
+        pageTitle: currentPageData.title,
+        pageType: currentPageData.type,
+        userInput: userSelection,
+        timestamp: new Date().toISOString()
+      };
 
-    // Add to current branch's completed steps
-    const updatedFlowStack = [...flowStack];
-    const currentBranch = updatedFlowStack[updatedFlowStack.length - 1];
-    currentBranch.completedSteps.push(stepData);
+      const updatedFlowStack = [...flowStack];
+      const currentBranch = updatedFlowStack[updatedFlowStack.length - 1];
+      currentBranch.completedSteps.push(stepData);
 
-    // Determine next actions based on page type and user input
-    if (currentPageData.type === "SELECTION") {
-      // Check if selected item has next_pages
-      if (userSelection.next_pages && userSelection.next_pages.length > 0) {
-        console.log("Selected item has next_pages:", userSelection.next_pages);
+      // determine next actions based on page type and user input
+      if (currentPageData.type === "SELECTION") {
+        // Check if selected item has next_pages
+        if (userSelection.next_pages && userSelection.next_pages.length > 0) {
+          console.log("Selected item has next_pages:", userSelection.next_pages);
 
-        // Create new branch for selected item's pages
-        const newBranch = {
-          pages: userSelection.next_pages,
-          currentIndex: 0,
-          completedSteps: []
-        };
-        updatedFlowStack.push(newBranch);
+          const newBranch = {
+            pages: userSelection.next_pages,
+            currentIndex: 0,
+            completedSteps: []
+          };
+          updatedFlowStack.push(newBranch);
 
-        // Add current page's next_pages to current branch (for after selection branch completes)
-        if (currentPageData.next_pages && currentPageData.next_pages.length > 0) {
-          console.log("Also queuing current page's next_pages:", currentPageData.next_pages);
+          // Add current page's next_pages to current branch (for after selection branch completes)
+          if (currentPageData.next_pages && currentPageData.next_pages.length > 0) {
+            console.log("Also queuing current page's next_pages:", currentPageData.next_pages);
+            currentBranch.pages.push(...currentPageData.next_pages);
+          }
+
+          setFlowStack(updatedFlowStack);
+
+          await loadPageById(userSelection.next_pages[0]);
+          return;
+        } else if (currentPageData.next_pages && currentPageData.next_pages.length > 0) {
+          // Selected item has no next_pages, but current page does
+          console.log("Adding current page's next_pages:", currentPageData.next_pages);
           currentBranch.pages.push(...currentPageData.next_pages);
         }
-
-        setFlowStack(updatedFlowStack);
-
-        // Load first page of new branch
-        await loadPageById(userSelection.next_pages[0]);
-        return;
-      } else if (currentPageData.next_pages && currentPageData.next_pages.length > 0) {
-        // Selected item has no next_pages, but current page does
-        console.log("Adding current page's next_pages:", currentPageData.next_pages);
-        currentBranch.pages.push(...currentPageData.next_pages);
+      } else if (currentPageData.type === "NUMBER" || currentPageData.type === "TEXT") {
+        // For number/text pages, add page's next_pages
+        if (currentPageData.next_pages && currentPageData.next_pages.length > 0) {
+          console.log("Adding page's next_pages:", currentPageData.next_pages);
+          currentBranch.pages.push(...currentPageData.next_pages);
+        }
       }
-    } else if (currentPageData.type === "NUMBER" || currentPageData.type === "TEXT") {
-      // For number/text pages, add page's next_pages
-      if (currentPageData.next_pages && currentPageData.next_pages.length > 0) {
-        console.log("Adding page's next_pages:", currentPageData.next_pages);
-        currentBranch.pages.push(...currentPageData.next_pages);
-      }
+
+      setFlowStack(updatedFlowStack);
+      await moveToNextPage();
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      toast({
+        title: "Error processing selection",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingNextPage(false);
     }
-
-    setFlowStack(updatedFlowStack);
-    await moveToNextPage();
   };
 
   const loadPageById = async (pageId) => {
-    setIsLoadingNextPage(true);
     try {
       const pageData = await getProdPageById(pageId);
       console.log("Loaded page:", pageData);
@@ -131,8 +136,7 @@ export default function ProductList({ products }) {
         title: `Error loading page: ${error.message}`,
         variant: "destructive",
       });
-    } finally {
-      setIsLoadingNextPage(false);
+      throw error; // Re-throw to be handled by caller
     }
   };
 
@@ -216,35 +220,48 @@ export default function ProductList({ products }) {
   };
 
   const handlePrevious = async () => {
-    const currentBranch = flowStack[flowStack.length - 1];
+    setIsLoadingNextPage(true);
 
-    if (!currentBranch) return;
+    try {
+      const currentBranch = flowStack[flowStack.length - 1];
 
-    if (currentBranch.currentIndex > 0) {
-      // Go back within current branch
-      const prevIndex = currentBranch.currentIndex - 1;
-      const prevPageId = currentBranch.pages[prevIndex];
+      if (!currentBranch) return;
 
-      // Remove last completed step from current branch
-      const updatedFlowStack = [...flowStack];
-      updatedFlowStack[updatedFlowStack.length - 1].completedSteps.pop();
-      updatedFlowStack[updatedFlowStack.length - 1].currentIndex = prevIndex;
-      setFlowStack(updatedFlowStack);
+      if (currentBranch.currentIndex > 0) {
+        // Go back within current branch
+        const prevIndex = currentBranch.currentIndex - 1;
+        const prevPageId = currentBranch.pages[prevIndex];
 
-      await loadPageById(prevPageId);
-    } else if (flowStack.length > 1) {
-      // Go back to parent branch
-      const parentStack = flowStack.slice(0, -1);
-      const parentBranch = parentStack[parentStack.length - 1];
+        // Remove last completed step from current branch
+        const updatedFlowStack = [...flowStack];
+        updatedFlowStack[updatedFlowStack.length - 1].completedSteps.pop();
+        updatedFlowStack[updatedFlowStack.length - 1].currentIndex = prevIndex;
+        setFlowStack(updatedFlowStack);
 
-      // Remove last step from parent branch
-      parentBranch.completedSteps.pop();
+        await loadPageById(prevPageId);
+      } else if (flowStack.length > 1) {
+        // Go back to parent branch
+        const parentStack = flowStack.slice(0, -1);
+        const parentBranch = parentStack[parentStack.length - 1];
 
-      setFlowStack(parentStack);
+        // Remove last step from parent branch
+        parentBranch.completedSteps.pop();
 
-      // Load parent's current page
-      const parentPageId = parentBranch.pages[parentBranch.currentIndex];
-      await loadPageById(parentPageId);
+        setFlowStack(parentStack);
+
+        // Load parent's current page
+        const parentPageId = parentBranch.pages[parentBranch.currentIndex];
+        await loadPageById(parentPageId);
+      }
+    } catch (error) {
+      console.error("Error in handlePrevious:", error);
+      toast({
+        title: "Error navigating backward",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingNextPage(false);
     }
   };
 
@@ -354,25 +371,42 @@ export default function ProductList({ products }) {
       {currentPageData && currentPageData.type === "TEXT" && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">{currentPageData.title}</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">{currentPageData.title}</h2>
+              {isLoadingNextPage && (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              )}
+            </div>
             <p className="text-gray-600 mb-4">{currentPageData.desc}</p>
             <input
               type="text"
               className="w-full p-2 border rounded mb-4"
               placeholder="Enter your text..."
               id="textInput"
+              disabled={isLoadingNextPage}
             />
             <div className="flex gap-2">
               {canGoBack() && (
-                <Button variant="outline" onClick={handlePrevious} className="flex-1">
-                  Previous
+                <Button
+                  variant="outline"
+                  onClick={handlePrevious}
+                  className="flex-1"
+                  disabled={isLoadingNextPage}
+                >
+                  {isLoadingNextPage ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    "Previous"
+                  )}
                 </Button>
               )}
               <Button
                 onClick={() => {
                   const textInput = document.getElementById('textInput');
                   const textValue = textInput ? textInput.value : '';
-                  handleSubmit({ textValue });
+                  if (textValue.trim()) {
+                    handleSubmit({ textValue });
+                  }
                 }}
                 className="flex-1"
                 disabled={isLoadingNextPage}

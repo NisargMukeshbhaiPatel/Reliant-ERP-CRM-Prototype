@@ -32,9 +32,25 @@ export function NumberInputDialog({
   const handleInputChange = (inputId, value) => {
     setValues((prev) => ({ ...prev, [inputId]: value }))
 
-    // Clear error when user starts typing
     if (errors[inputId]) {
       setErrors((prev) => ({ ...prev, [inputId]: "" }))
+    }
+  }
+
+  const getValidationRules = (input) => {
+    //if both min and max are 0, it means any value > 0 is allowed
+    if (input.minimum === 0 && input.maximum === 0) {
+      return {
+        min: 0,
+        max: undefined,
+        requiresPositive: true
+      }
+    }
+
+    return {
+      min: input.minimum,
+      max: input.maximum,
+      requiresPositive: false
     }
   }
 
@@ -43,6 +59,7 @@ export function NumberInputDialog({
 
     product.number_inputs.forEach((input) => {
       const value = values[input.id]
+      const rules = getValidationRules(input)
 
       if (input.required && (!value || value.trim() === "")) {
         newErrors[input.id] = "This field is required"
@@ -57,14 +74,21 @@ export function NumberInputDialog({
           return
         }
 
-        if (numValue < input.minimum) {
-          newErrors[input.id] = `Value must be at least ${input.minimum}`
+        if (rules.requiresPositive && numValue <= 0) {
+          newErrors[input.id] = "Value must be greater than 0"
           return
         }
 
-        if (numValue > input.maximum) {
-          newErrors[input.id] = `Value must be at most ${input.maximum}`
-          return
+        if (!rules.requiresPositive) {
+          if (numValue < rules.min) {
+            newErrors[input.id] = `Value must be at least ${rules.min}`
+            return
+          }
+
+          if (rules.max !== undefined && numValue > rules.max) {
+            newErrors[input.id] = `Value must be at most ${rules.max}`
+            return
+          }
         }
 
         if (!input.decimals && numValue % 1 !== 0) {
@@ -107,6 +131,42 @@ export function NumberInputDialog({
     }
   }
 
+  const getInputProps = (input) => {
+    const rules = getValidationRules(input)
+
+    if (rules.requiresPositive) {
+      return {
+        min: input.decimals ? "0.1" : "1",
+        max: undefined
+      }
+    }
+
+    return {
+      min: rules.min,
+      max: rules.max
+    }
+  }
+
+  const getPlaceholderText = (input) => {
+    const rules = getValidationRules(input)
+
+    if (rules.requiresPositive) {
+      return "Any value > 0"
+    }
+
+    return `${rules.min} - ${rules.max}`
+  }
+
+  const getRangeText = (input) => {
+    const rules = getValidationRules(input)
+
+    if (rules.requiresPositive) {
+      return "Range: Any value > 0"
+    }
+
+    return `Range: ${rules.min} - ${rules.max}`
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
@@ -125,30 +185,34 @@ export function NumberInputDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {product.number_inputs.map((input) => (
-            <div key={input.id} className="space-y-2">
-              <Label htmlFor={input.id} className="text-sm font-medium">
-                {input.title}
-                {input.required && <span className="text-destructive ml-1">*</span>}
-              </Label>
-              <Input
-                id={input.id}
-                type="number"
-                step={input.decimals ? "0.1" : "1"}
-                min={input.minimum}
-                max={input.maximum}
-                value={values[input.id] || ""}
-                onChange={(e) => handleInputChange(input.id, e.target.value)}
-                placeholder={`${input.minimum} - ${input.maximum}`}
-                className={errors[input.id] ? "border-destructive" : ""}
-              />
-              {errors[input.id] && <p className="text-sm text-destructive">{errors[input.id]}</p>}
-              <p className="text-xs text-muted-foreground">
-                Range: {input.minimum} - {input.maximum}
-                {input.decimals ? " (decimals allowed)" : " (whole numbers only)"}
-              </p>
-            </div>
-          ))}
+          {product.number_inputs.map((input) => {
+            const inputProps = getInputProps(input)
+
+            return (
+              <div key={input.id} className="space-y-2">
+                <Label htmlFor={input.id} className="text-sm font-medium">
+                  {input.title}
+                  {input.required && <span className="text-destructive ml-1">*</span>}
+                </Label>
+                <Input
+                  id={input.id}
+                  type="number"
+                  step={input.decimals ? "0.1" : "1"}
+                  min={inputProps.min}
+                  max={inputProps.max}
+                  value={values[input.id] || ""}
+                  onChange={(e) => handleInputChange(input.id, e.target.value)}
+                  placeholder={getPlaceholderText(input)}
+                  className={errors[input.id] ? "border-destructive" : ""}
+                />
+                {errors[input.id] && <p className="text-sm text-destructive">{errors[input.id]}</p>}
+                <p className="text-xs text-muted-foreground">
+                  {getRangeText(input)}
+                  {input.decimals ? " (decimals allowed)" : " (whole numbers only)"}
+                </p>
+              </div>
+            )
+          })}
         </div>
 
         <DialogFooter className="flex items-center justify-between">
