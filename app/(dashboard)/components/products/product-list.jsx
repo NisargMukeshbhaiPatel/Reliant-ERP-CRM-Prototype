@@ -2,12 +2,13 @@
 import { useState } from "react";
 import { Button } from "@/ui/components/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/ui/components/card";
-import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { ShoppingCart, Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { getProductImageUrl } from "@/constants/pb";
 import { getProdPageById } from "@/lib/pb/products";
 import { NumberInputDialog } from "./number-input-dialog";
 import { SelectionDialog } from "./selection-dialog";
+import { WindowSummaryDialog } from "./window-summary-dialog";
 
 export default function ProductList({ products }) {
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -19,7 +20,9 @@ export default function ProductList({ products }) {
   const [flowStack, setFlowStack] = useState([]);
   const [allFlowData, setAllFlowData] = useState([]);
 
-  const { toast } = useToast();
+  // storage for multiple configurations/products
+  const [configuredProducts, setConfiguredProducts] = useState([]);
+  const [showSummary, setShowSummary] = useState(false);
 
   const handleProductClick = async (product) => {
     setLoadingProductId(product.id);
@@ -69,12 +72,14 @@ export default function ProductList({ products }) {
       timestamp: new Date().toISOString()
     };
 
+    // Add to current branch's completed steps
     const updatedFlowStack = [...flowStack];
     const currentBranch = updatedFlowStack[updatedFlowStack.length - 1];
     currentBranch.completedSteps.push(stepData);
 
     // Determine next actions based on page type and user input
     if (currentPageData.type === "SELECTION") {
+      // Check if selected item has next_pages
       if (userSelection.next_pages && userSelection.next_pages.length > 0) {
         console.log("Selected item has next_pages:", userSelection.next_pages);
 
@@ -130,21 +135,15 @@ export default function ProductList({ products }) {
   };
 
   const moveToNextPage = async (stackOverride = null) => {
-    console.log("=== MOVE TO NEXT PAGE START ===");
-
-    // Use provided stack or current state
+    console.log("MOVE TO NEXT PAGE START");
     const currentStack = stackOverride || flowStack;
     const currentBranch = currentStack[currentStack.length - 1];
-
-    console.log("Using stack:", currentStack);
-    console.log("Current branch:", currentBranch);
 
     if (!currentBranch) {
       console.log("No current branch, completing flow");
       await completeFlow();
       return;
     }
-
     // Check if current branch has more pages
     if (currentBranch.currentIndex < currentBranch.pages.length - 1) {
       // Move to next page in current branch
@@ -152,9 +151,7 @@ export default function ProductList({ products }) {
       const nextPageId = currentBranch.pages[nextIndex];
 
       console.log(`Moving to next page in branch: ${nextPageId} (index ${nextIndex})`);
-      console.log(`Branch has ${currentBranch.pages.length} pages:`, currentBranch.pages);
 
-      // Update index in the stack we're working with
       const updatedFlowStack = [...currentStack];
       updatedFlowStack[updatedFlowStack.length - 1] = {
         ...updatedFlowStack[updatedFlowStack.length - 1],
@@ -164,14 +161,23 @@ export default function ProductList({ products }) {
       setFlowStack(updatedFlowStack);
       await loadPageById(nextPageId);
     } else {
-      // Current branch is complete, backtrack
-      console.log("Branch complete, backtracking");
-      console.log(`Branch had ${currentBranch.pages.length} pages, completed index: ${currentBranch.currentIndex}`);
-      await backtrackToParent();
+      // Current branch is complete
+      console.log("Branch complete");
+
+      // Check if this is the last branch
+      if (currentStack.length === 1) {
+        console.log("Last branch complete, finishing flow");
+        await completeFlow();
+      } else {
+        console.log("Backtracking to parent");
+        await backtrackToParent();
+      }
     }
+    console.log("=== MOVE TO NEXT PAGE END ===");
   };
 
   const backtrackToParent = async () => {
+    console.log("=== BACKTRACK TO PARENT START ===");
     const completedBranch = flowStack[flowStack.length - 1];
     const remainingStack = flowStack.slice(0, -1);
 
@@ -182,40 +188,71 @@ export default function ProductList({ products }) {
     setAllFlowData(prev => [...prev, ...completedBranch.completedSteps]);
 
     if (remainingStack.length === 0) {
+      // No more branches, flow is complete
       console.log("No more branches, completing flow");
       await completeFlow();
       return;
     }
 
+    // Update stack first
     setFlowStack(remainingStack);
+
+    const parentBranch = remainingStack[remainingStack.length - 1];
+    console.log("Parent branch after backtrack:", parentBranch);
 
     // Move to next page in parent branch, passing the updated stack
     await moveToNextPage(remainingStack);
   };
 
   const completeFlow = async () => {
+    // Collect all remaining data
     const finalData = [...allFlowData];
 
+    // Add any remaining branch data
     flowStack.forEach(branch => {
       finalData.push(...branch.completedSteps);
     });
 
-    const submissionData = {
-      productId: selectedProduct.id,
-      productTitle: selectedProduct.title,
-      productImage: selectedProduct.image,
+    console.log("Flow completed!");
+    console.log("Final flow data:", finalData);
+
+    // Create configured product object
+    const configuredProduct = {
+      id: selectedProduct.id, // Generate unique ID
+      product: selectedProduct,
       userSelections: finalData,
     };
 
-    console.log("Submission data:", submissionData);
+    // Add to configured products list
+    setConfiguredProducts(prev => [...prev, configuredProduct]);
 
-    // TODO: Submit to Backend
-
-    toast({
-      title: "Quotation selected successfully!",
-    });
-
+    // Close current dialog and show summary
     handleDialogClose();
+    setShowSummary(true);
+  };
+
+  const handleDeleteProduct = (productId) => {
+    setConfiguredProducts(prev => prev.filter(p => p.id !== productId));
+    toast({
+      title: "Product removed",
+      description: "Configuration has been removed from your selection",
+    });
+  };
+
+  const handleSelectMoreProducts = () => {
+    setShowSummary(false);
+  };
+
+  const handleViewSummary = () => {
+    if (configuredProducts.length === 0) {
+      toast({
+        title: "Your cart is empty",
+        description: "Add some products to your selection to continue",
+        variant: "destructive"
+      });
+      return;
+    }
+    setShowSummary(true);
   };
 
   const handlePrevious = async () => {
@@ -272,8 +309,28 @@ export default function ProductList({ products }) {
   return (
     <div>
       {/* Header section */}
-      <div className="text-center mb-7">
-        <h1 className="text-4xl font-bold text-gray-800">Our Products</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-7 gap-4">
+        <div className="text-center sm:text-left">
+          <h1 className="text-4xl font-bold text-gray-800">Our Products</h1>
+        </div>
+
+        <div className="flex justify-center sm:justify-end">
+          <Button
+            variant="outline"
+            onClick={handleViewSummary}
+            className="flex items-center gap-2 px-4 py-2 relative"
+          >
+            <div className="relative">
+              <ShoppingCart className="h-6 w-6" />
+              {configuredProducts.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                  {configuredProducts.length}
+                </span>
+              )}
+            </div>
+            View Selections
+          </Button>
+        </div>
       </div>
 
       {/* Products Grid */}
@@ -281,11 +338,11 @@ export default function ProductList({ products }) {
         {products.map((product) => (
           <Card key={product.id} onClick={() => handleProductClick(product)} className="group cursor-pointer">
             <CardContent className="p-0 flex flex-col h-full">
-              <div className="relative overflow-hidden rounded-t-xl h-64">
+              <div className="relative overflow-hidden rounded-t-3xl h-64">
                 <img
                   src={getProductImageUrl(product.collectionId, product.id, product.image)}
                   alt={product.title}
-                  className="w-full h-full rounded-t-xl object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
@@ -293,7 +350,7 @@ export default function ProductList({ products }) {
               <div className="p-8 flex flex-col flex-1">
                 <CardHeader className="p-0 mb-4">
                   <CardTitle className="text-2xl text-gray-800 group-hover:text-gray-900 transition-colors duration-200">
-                    {product.title}
+                    {product.name}
                   </CardTitle>
                 </CardHeader>
                 <p className="text-gray-600 text-base leading-relaxed mb-6 flex-1">
@@ -393,6 +450,16 @@ export default function ProductList({ products }) {
           </div>
         </div>
       )}
+
+      {/* Window Summary Dialog */}
+      <WindowSummaryDialog
+        products={configuredProducts}
+        open={showSummary}
+        onOpenChange={setShowSummary}
+        onDelete={handleDeleteProduct}
+        handleSelectMoreProducts={handleSelectMoreProducts}
+      />
     </div>
   );
 }
+

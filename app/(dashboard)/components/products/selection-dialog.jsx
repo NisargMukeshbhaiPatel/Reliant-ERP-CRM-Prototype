@@ -137,7 +137,6 @@ export function SelectionDialog({
           <div className="flex gap-2">
             {showPrevious && (
               <Button
-                variant="outline"
                 onClick={handlePrevious}
                 disabled={isSubmitting || isLoading}
               >
@@ -158,8 +157,9 @@ export function SelectionDialog({
             </Button>
           </div>
 
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex flex-col items-end">
             <Button
+              variant="primary"
               onClick={handleSubmit}
               disabled={isNextDisabled}
             >
