@@ -350,7 +350,7 @@ export default function ProductList({ products }) {
               <div className="p-8 flex flex-col flex-1">
                 <CardHeader className="p-0 mb-4">
                   <CardTitle className="text-2xl text-gray-800 group-hover:text-gray-900 transition-colors duration-200">
-                    {product.name}
+                    {product.title}
                   </CardTitle>
                 </CardHeader>
                 <p className="text-gray-600 text-base leading-relaxed mb-6 flex-1">
