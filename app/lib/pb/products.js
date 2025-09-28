@@ -7,7 +7,6 @@ export async function getAllProducts(options = {}) {
 
 export async function getProdPageById(id) {
   try {
-    console.log(`Loading page: ${id}`);
     const page = await pb.collection('pages').getOne(id);
 
     switch (page.type) {
