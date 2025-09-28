@@ -1,10 +1,10 @@
 import PocketBase from "pocketbase";
 import { LRUCache } from 'lru-cache';
+import { PB_URL } from "@/constants/pb";
 
 export const createPB = (() => {
   const pb = new PocketBase(
-    "https://pb-reliant-proto.fly.dev/"
-  );
+    PB_URL);
   pb.autoCancellation(false);
   return pb;
 });
@@ -17,3 +17,4 @@ const options = {
 };
 
 export const pbUserCache = new LRUCache(options);
+

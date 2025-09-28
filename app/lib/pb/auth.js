@@ -1,7 +1,7 @@
 import { globalPB } from "./global";
 import { prettifyPBError } from "@/lib/pretty-print";
 
-export const ACCOUNTS_COOKIE_NAME = 'socket_accounts';
+export const ACCOUNTS_COOKIE_NAME = 'reliant_accounts';
 export const PB_AUTH_COOKIE_NAME = 'pb_auth';
 
 export default class PBAuth {
@@ -50,13 +50,13 @@ export default class PBAuth {
   static logoutCurrent(cookieStore) {
     const cookie = cookieStore.get(PB_AUTH_COOKIE_NAME)?.value;
     if (!cookie) return null;
-    
+
     globalPB.authStore.loadFromCookie(cookie);
     const userId = globalPB.authStore.model?.id;
     cookieStore.delete(PB_AUTH_COOKIE_NAME);
     globalPB.authStore.clear();
-  
-    const nextAccount = userId ? PBAuth.removeAccount(cookieStore, userId) : null;    
+
+    const nextAccount = userId ? PBAuth.removeAccount(cookieStore, userId) : null;
     if (nextAccount) {
       cookieStore.set(PB_AUTH_COOKIE_NAME, nextAccount.auth);
     }
@@ -98,12 +98,12 @@ export default class PBAuth {
   static storeAccount(cookieStore, user, auth) {
     let accounts = PBAuth.getStoredAccounts(cookieStore);
     const userId = user.id;
-    
+
     if (!accounts.includes(userId)) {
       accounts.push(userId);
       cookieStore.set(ACCOUNTS_COOKIE_NAME, encodeURIComponent(JSON.stringify(accounts)));
     }
-    
+
     // Store user data and auth in a separate cookie
     cookieStore.set(userId, encodeURIComponent(JSON.stringify({ auth, user })));
   }
@@ -111,7 +111,7 @@ export default class PBAuth {
   static removeAccount(cookieStore, userId) {
     const accounts = PBAuth.getStoredAccounts(cookieStore);
     const index = accounts.indexOf(userId);
-    
+
     if (index !== -1) {
       accounts.splice(index, 1);
       cookieStore.set(ACCOUNTS_COOKIE_NAME, encodeURIComponent(JSON.stringify(accounts)));

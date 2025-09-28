@@ -1,7 +1,8 @@
 import PBUser from "@/lib/pb/user";
+
 import Sidebar from "./components/sidebar/sidebar";
 import { SidebarProvider } from "@/components/sidebar";
-
+// For global data
 import { DataProvider } from "./context";
 import { cookies } from "next/headers";
 
@@ -9,10 +10,17 @@ export default async function DashLayout({ children }) {
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar:state")?.value === "true";
 
-  const pbUser = await PBUser.get();
-  const user = pbUser?.getUser();
-  //TODO: later when we'll do multiple acc
-  //  const storedAccounts = PBAuth.getStoredAccountsWithData(cookieStore);
+  let user;
+  try {
+
+    const pbUser = await PBUser.get();
+    user = pbUser?.getUser();
+    //TODO: later when we'll do multiple acc
+    //  const storedAccounts = PBAuth.getStoredAccountsWithData(cookieStore);
+
+  } catch (error) {
+    console.error(error)
+  }
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
@@ -21,7 +29,7 @@ export default async function DashLayout({ children }) {
           <Sidebar />
           <div className="flex-1 overflow-hidden">
             <main className="flex-1 pb-7 h-full overflow-y-auto pt-14 md:pt-8 px-4 md:px-8">
-              <div className="max-w-5xl mx-auto">{children}</div>
+              <div className="w-full mx-auto">{children}</div>
             </main>
           </div>
         </div>
