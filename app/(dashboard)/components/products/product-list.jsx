@@ -235,7 +235,7 @@ export default function ProductList({ products }) {
     setConfiguredProducts(prev => prev.filter(p => p.id !== productId));
     toast({
       title: "Product removed",
-      description: "Configuration has been removed from your selection",
+      variant: "success"
     });
   };
 
@@ -288,7 +288,6 @@ export default function ProductList({ products }) {
     }
   };
 
-  // UI helper functions
   const canGoBack = () => {
     const currentBranch = flowStack[flowStack.length - 1];
     if (!currentBranch) return false;

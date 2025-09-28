@@ -221,7 +221,7 @@ export function NumberInputDialog({
         <DialogFooter className="flex items-center justify-between">
           <div className="flex gap-2">
             {showPrevious && (
-              <Button variant="outline" onClick={handlePrevious}>
+              <Button onClick={handlePrevious}>
                 <ChevronLeft className="h-4 w-4 mr-1" />
                 Previous
               </Button>
@@ -231,7 +231,7 @@ export function NumberInputDialog({
             </Button>
           </div>
 
-          <Button onClick={handleSubmit}>
+          <Button variant="primary" onClick={handleSubmit}>
             {showNext ? (
               <>
                 {isLastStep ? "Complete" : "Next"}
