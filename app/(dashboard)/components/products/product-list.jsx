@@ -309,10 +309,19 @@ export default function ProductList({ products }) {
     <div>
       {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-7 gap-4">
-        <div className="text-center sm:text-left">
-          <h1 className="text-4xl font-bold text-gray-800">Our Products</h1>
+        {/* Logo and Title section */}
+        <div className="flex items-center gap-4">
+          <img
+            src="https://reliant-windows.co.uk/wp-content/uploads/2024/12/Reliant_Windows_Logo-2.webp"
+            alt="Reliant Windows Logo"
+            className="h-12 w-auto object-contain"
+          />
+          <div className="text-left">
+            <h1 className="text-4xl font-bold text-gray-800">Our Products</h1>
+          </div>
         </div>
 
+        {/* Cart Button */}
         <div className="flex justify-center sm:justify-end">
           <Button
             variant="outline"
