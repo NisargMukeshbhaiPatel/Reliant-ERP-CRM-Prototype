@@ -90,7 +90,7 @@ export function ProductImage({
       </div>
       <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
         <DialogContent
-          className="max-w-[95vw] w-auto max-h-[95vh] h-auto p-8 border-0 bg-white sm:max-w-7xl"
+          className="max-w-[95vw] w-auto min-w-[50vw] max-h-[95vh] h-auto p-8 border-0 bg-white sm:max-w-7xl"
           onEscapeKeyDown={(e) => {
             e.preventDefault()
             setIsExpanded(false)

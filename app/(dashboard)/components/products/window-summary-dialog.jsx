@@ -94,15 +94,21 @@ export function WindowSummaryDialog({ products, open, onOpenChange, onDelete, ha
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div>
                   {productObj.userSelections?.map((selection, index) => (
-                    <div key={index} className="flex items-center justify-between gap-3 py-1">
-                      <span className="text-xs text-muted-foreground truncate">{selection.pageTitle}:</span>
-                      <div className="flex-shrink-0">{renderSelectionValue(selection)}</div>
+                    <div
+                      key={index}
+                      className="flex items-center justify-between gap-4 p-3 bg-muted/30 hover:bg-muted/50 transition-colors border border-border/50"
+                    >
+                      <span className="text-sm font-medium text-foreground/80 flex-1 min-w-0">
+                        {selection.pageTitle}
+                      </span>
+                      <div className="flex-shrink-0 font-semibold text-sm">
+                        {renderSelectionValue(selection)}
+                      </div>
                     </div>
                   ))}
                 </div>
-
                 {productIndex < products.length - 1 && <Separator />}
               </div>
             })}
