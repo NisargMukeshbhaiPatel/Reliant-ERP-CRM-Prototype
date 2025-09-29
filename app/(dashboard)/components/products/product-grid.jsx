@@ -72,7 +72,7 @@ export function ProductGrid({
       content: "p-3",
       image: "rounded-t-lg",
       title: "text-xl font-bold text-balance tracking-tight",
-      desc: "text-sm text-muted-foreground/80 text-pretty leading-relaxed",
+      desc: "mb-4 text-sm text-muted-foreground text-pretty leading-relaxed",
     },
   }
 
@@ -104,7 +104,7 @@ export function ProductGrid({
           <div
             key={selection.id}
             className={cn(
-              "group cursor-pointer transition-all duration-500 rounded-xl",
+              "group cursor-pointer transition-all duration-500 rounded-xl flex flex-col",
               styles.card,
               isSelected &&
               "ring-2 ring-primary/60 ring-offset-2 ring-offset-background premium-shadow-lg scale-[1.02]",
@@ -155,7 +155,7 @@ export function ProductGrid({
             </div>
 
             {/* Content Section */}
-            <div className={cn("flex flex-col", styles.content)}>
+            <div className={cn("flex-grow flex flex-col", styles.content)}>
               <div className="flex-1">
                 <h3
                   className={cn(
@@ -175,7 +175,7 @@ export function ProductGrid({
               {showButton ? (
                 <Button
                   variant="primary"
-                  className="w-full mt-4"
+                  className="w-full mt-auto"
                   disabled={selectedId === selection.id}
                   onClick={(e) => {
                     e.stopPropagation();

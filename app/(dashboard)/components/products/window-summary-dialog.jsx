@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/dialog"
 import { getProductImageUrl } from "@/constants/pb";
 import { Button } from "@/components/button"
-import { Badge } from "@/components/badge"
 import { Separator } from "@/components/separator"
 import { Plus, Check, Trash2, ShoppingCart } from "lucide-react"
 import CustomerDialog from "../customer-form/customer-dialog";
@@ -15,6 +14,7 @@ export function WindowSummaryDialog({ products, open, onOpenChange, onDelete, ha
   const handleClick = () => {
     console.log("Final Data", products)
     if (!products || products.length === 0) return;
+    onOpenChange(false);
     setIsDialogOpen(true);
   };
 
@@ -139,6 +139,7 @@ export function WindowSummaryDialog({ products, open, onOpenChange, onDelete, ha
         </DialogContent>
       </Dialog>
       <CustomerDialog
+        product={products[0].product}
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         onComplete={handleCustomerComplete}

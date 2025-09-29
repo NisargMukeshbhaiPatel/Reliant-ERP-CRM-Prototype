@@ -13,6 +13,7 @@ import { Button } from "@/components/button"
 import { Input } from "@/components/input"
 import { Label } from "@/components/label"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { getProductImageUrl } from "@/constants/pb"
 
 export function NumberInputDialog({
   open,
@@ -38,7 +39,6 @@ export function NumberInputDialog({
   }
 
   const getValidationRules = (input) => {
-    //if both min and max are 0, it means any value > 0 is allowed
     if (input.minimum === 0 && input.maximum === 0) {
       return {
         min: 0,
@@ -170,80 +170,104 @@ export function NumberInputDialog({
     return `Range: ${rules.min} - ${rules.max}`
   }
 
+  const imageUrl = product.bg_image ? getProductImageUrl(product.collectionId, product.id, product.bg_image) : null
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-balance">{product.title}</DialogTitle>
-              <DialogDescription className="text-pretty">{product.description}</DialogDescription>
-            </div>
-            {totalSteps > 1 && (
-              <div className="text-sm text-muted-foreground bg-secondary px-3 py-1 rounded-full">
-                Step {currentStep} of {totalSteps}
-              </div>
-            )}
-          </div>
-        </DialogHeader>
-
-        <div className="space-y-4 py-4">
-          {product.number_inputs.map((input) => {
-            const inputProps = getInputProps(input)
-
-            return (
-              <div key={input.id} className="space-y-2">
-                <Label htmlFor={input.id} className="text-sm font-medium">
-                  {input.title}
-                  {input.required && <span className="text-destructive ml-1">*</span>}
-                </Label>
-                <Input
-                  id={input.id}
-                  type="number"
-                  step={input.decimals ? "0.1" : "1"}
-                  min={inputProps.min}
-                  max={inputProps.max}
-                  value={values[input.id] || ""}
-                  onChange={(e) => handleInputChange(input.id, e.target.value)}
-                  placeholder={getPlaceholderText(input)}
-                  className={errors[input.id] ? "border-destructive" : ""}
+      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden">
+        <div className="flex flex-col md:flex-row h-full max-h-[95vh]">
+          {/* Image Section */}
+          {imageUrl && (
+            <div className="w-full md:w-2/5 flex-shrink-0 max-h-[40vh] md:max-h-full">
+              <div className="relative h-full w-full">
+                <img
+                  src={imageUrl}
+                  alt={product.title}
+                  className="w-full h-[98vh] object-cover"
+                  style={{ maxHeight: '1000px' }}
                 />
-                {errors[input.id] && <p className="text-sm text-destructive">{errors[input.id]}</p>}
-                <p className="text-xs text-muted-foreground">
-                  {getRangeText(input)}
-                  {input.decimals ? " (decimals allowed)" : " (whole numbers only)"}
-                </p>
               </div>
-            )
-          })}
-        </div>
+            </div>
+          )}
 
-        <DialogFooter className="flex items-center justify-between">
-          <div className="flex gap-2">
-            {showPrevious && (
-              <Button onClick={handlePrevious}>
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous
-              </Button>
-            )}
-            <Button variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
+          {/* Form Section */}
+          <div className="flex-1 flex flex-col p-6 justify-center">
+            <div className="flex flex-col max-h-full">
+              <DialogHeader className="flex-shrink-0 mb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <DialogTitle className="text-xl">{product.title}</DialogTitle>
+                    <DialogDescription className="text-pretty">{product.desc}</DialogDescription>
+                  </div>
+                  {totalSteps > 1 && (
+                    <div className="text-sm text-muted-foreground bg-secondary px-3 py-1 rounded-full flex-shrink-0">
+                      Step {currentStep} of {totalSteps}
+                    </div>
+                  )}
+                </div>
+              </DialogHeader>
+
+              <div className="flex-1 overflow-y-auto min-h-0">
+                <div className="space-y-4 pr-2">
+                  {product.number_inputs.map((input) => {
+                    const inputProps = getInputProps(input)
+
+                    return (
+                      <div key={input.id} className="space-y-2">
+                        <Label htmlFor={input.id} className="text-sm font-medium">
+                          {input.title}
+                          {input.required && <span className="text-destructive ml-1">*</span>}
+                        </Label>
+                        <Input
+                          id={input.id}
+                          type="number"
+                          step={input.decimals ? "0.1" : "1"}
+                          min={inputProps.min}
+                          max={inputProps.max}
+                          value={values[input.id] || ""}
+                          onChange={(e) => handleInputChange(input.id, e.target.value)}
+                          placeholder={getPlaceholderText(input)}
+                          className={errors[input.id] ? "border-destructive" : ""}
+                        />
+                        {errors[input.id] && <p className="text-sm text-destructive">{errors[input.id]}</p>}
+                        <p className="text-xs text-muted-foreground">
+                          {getRangeText(input)}
+                          {input.decimals ? " (decimals allowed)" : " (whole numbers only)"}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <DialogFooter className="flex items-center justify-between flex-shrink-0 mt-4">
+                <div className="flex gap-2">
+                  {showPrevious && (
+                    <Button onClick={handlePrevious}>
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Previous
+                    </Button>
+                  )}
+                  <Button variant="outline" onClick={handleClose}>
+                    Cancel
+                  </Button>
+                </div>
+
+                <Button variant="primary" onClick={handleSubmit}>
+                  {showNext ? (
+                    <>
+                      {isLastStep ? "Complete" : "Next"}
+                      {!isLastStep && <ChevronRight className="h-4 w-4 ml-1" />}
+                    </>
+                  ) : (
+                    "Submit"
+                  )}
+                </Button>
+              </DialogFooter>
+            </div>
           </div>
-
-          <Button variant="primary" onClick={handleSubmit}>
-            {showNext ? (
-              <>
-                {isLastStep ? "Complete" : "Next"}
-                {!isLastStep && <ChevronRight className="h-4 w-4 ml-1" />}
-              </>
-            ) : (
-              "Submit"
-            )}
-          </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   )
 }
-

@@ -75,7 +75,7 @@ export function SelectionDialog({
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle className="text-balance">{product?.title}</DialogTitle>
-              <DialogDescription className="text-pretty">{product?.description}</DialogDescription>
+              <DialogDescription className="text-pretty">{product?.desc}</DialogDescription>
             </div>
             <div className="flex items-center gap-3">
               {(isLoading || isSubmitting) && (
