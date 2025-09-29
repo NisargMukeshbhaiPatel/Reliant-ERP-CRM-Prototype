@@ -314,10 +314,10 @@ export default function ProductList({ products }) {
           <img
             src="https://reliant-windows.co.uk/wp-content/uploads/2024/12/Reliant_Windows_Logo-2.webp"
             alt="Reliant Windows Logo"
-            className="h-12 w-auto object-contain"
+            className="h-16 w-auto object-contain"
           />
           <div className="text-left">
-            <h1 className="text-4xl font-bold text-gray-800">Our Products</h1>
+            <h1 className="text-2xl md:text-4xl font-bold text-gray-800">Our Products</h1>
           </div>
         </div>
 
