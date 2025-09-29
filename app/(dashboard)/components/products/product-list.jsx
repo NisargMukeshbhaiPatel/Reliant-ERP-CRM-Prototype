@@ -1,7 +1,6 @@
 "use client"
 import { useState } from "react";
 import { Button } from "@/ui/components/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/ui/components/card";
 import { ShoppingCart, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { getProductImageUrl } from "@/constants/pb";
@@ -9,6 +8,7 @@ import { getProdPageById } from "@/lib/pb/products";
 import { NumberInputDialog } from "./number-input-dialog";
 import { SelectionDialog } from "./selection-dialog";
 import { WindowSummaryDialog } from "./window-summary-dialog";
+import { ProductGrid } from "./product-grid";
 
 export default function ProductList({ products }) {
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -342,51 +342,28 @@ export default function ProductList({ products }) {
       </div>
 
       {/* Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {products.map((product) => (
-          <Card key={product.id} onClick={() => handleProductClick(product)} className="group cursor-pointer">
-            <CardContent className="p-0 flex flex-col h-full">
-              <div className="relative overflow-hidden rounded-t-3xl h-64">
-                <img
-                  src={getProductImageUrl(product.collectionId, product.id, product.image)}
-                  alt={product.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-
-              <div className="p-8 flex flex-col flex-1">
-                <CardHeader className="p-0 mb-4">
-                  <CardTitle className="text-2xl text-gray-800 group-hover:text-gray-900 transition-colors duration-200">
-                    {product.title}
-                  </CardTitle>
-                </CardHeader>
-                <p className="text-gray-600 text-base leading-relaxed mb-6 flex-1">
-                  {product.desc}
-                </p>
-                <Button
-                  variant="primary"
-                  className="w-full mt-auto"
-                  disabled={loadingProductId === product.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleProductClick(product);
-                  }}
-                >
-                  {loadingProductId === product.id ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    "Select"
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <ProductGrid
+        selections={products.map(product => ({
+          id: product.id,
+          title: product.title,
+          desc: product.desc,
+          image: getProductImageUrl(product.collectionId, product.id, product.image)
+        }))}
+        selectedId={loadingProductId}
+        onSelectionChange={(productId) => {
+          const product = products.find(p => p.id === productId);
+          if (product) {
+            handleProductClick(product);
+          }
+        }}
+        isLoading={!!loadingProductId}
+        variant="luxury"
+        showButton={true}
+        buttonText="Select"
+        loadingText="Loading..."
+        expandable={false}
+        imageFit="cover"
+      />
 
       {/* Dialog Components */}
       {currentPageData && currentPageData.type === "NUMBER" && (

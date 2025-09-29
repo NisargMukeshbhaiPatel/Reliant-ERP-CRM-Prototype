@@ -97,12 +97,7 @@ export function WindowSummaryDialog({ products, open, onOpenChange, onDelete, ha
                 <div className="space-y-2">
                   {productObj.userSelections?.map((selection, index) => (
                     <div key={index} className="flex items-center justify-between gap-3 py-1">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <Badge variant="secondary" className="text-xs px-1.5 py-0.5 flex-shrink-0">
-                          {selection.pageType.toLowerCase()}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground truncate">{selection.pageTitle}:</span>
-                      </div>
+                      <span className="text-xs text-muted-foreground truncate">{selection.pageTitle}:</span>
                       <div className="flex-shrink-0">{renderSelectionValue(selection)}</div>
                     </div>
                   ))}

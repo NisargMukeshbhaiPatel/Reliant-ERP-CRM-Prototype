@@ -11,9 +11,9 @@ import {
   DialogTitle,
 } from "@/components/dialog"
 import { Button } from "@/components/button"
-import { Card, CardContent } from "@/components/card"
-import { Check, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import { ScrollArea } from "@/components/scroll-area"
+import { ProductGrid } from "./product-grid";
 
 export function SelectionDialog({
   open,
@@ -94,42 +94,17 @@ export function SelectionDialog({
         </DialogHeader>
 
         <ScrollArea className="mb-4 flex-1 overflow-y-auto rounded-xl">
-          <div className="pt-4 px-6 pb-4 rounded-xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {product?.selections?.map((selection) => (
-              <Card
-                key={selection.id}
-                className={`cursor-pointer transition-all hover:shadow-md overflow-hidden ${selectedId === selection.id
-                  ? "ring-2 ring-primary border-primary"
-                  : "hover:border-primary/50"
-                  } ${(isLoading || isSubmitting) ? "opacity-50 pointer-events-none" : ""
-                  }`}
-                onClick={() => !isLoading && !isSubmitting && setSelectedId(selection.id)}
-              >
-                <CardContent className="p-0 h-full flex flex-col min-h-[31rem]">
-                  {/* Image Section - Fixed Height */}
-                  <div className="relative max-h-[32rem]">
-                    <img
-                      src={getPageItemImageUrl(selection.id, selection.image)}
-                      alt={selection.title}
-                      className="w-full h-full object-cover rounded-t-md"
-                    />
-                    {selectedId === selection.id && (
-                      <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                        <Check className="h-3 w-3" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Text Section - Flexible Height, Always at Bottom */}
-                  <div className="p-3 flex flex-col flex-1 justify-end text-center">
-                    <h3 className="font-medium text-balance mb-1 leading-tight">{selection.title}</h3>
-                    {selection.desc && (
-                      <p className="text-xs text-muted-foreground text-pretty leading-relaxed">{selection.desc}</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="pt-4 px-6 pb-4 rounded-xl">
+            <ProductGrid
+              selections={product?.selections?.map(selection => ({
+                ...selection,
+                image: getPageItemImageUrl(selection.id, selection.image)
+              })) || []}
+              selectedId={selectedId}
+              onSelectionChange={(id) => !isLoading && !isSubmitting && setSelectedId(id)}
+              isLoading={isLoading || isSubmitting}
+              variant="luxury"
+            />
           </div>
         </ScrollArea>
 
