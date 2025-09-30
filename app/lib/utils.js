@@ -23,6 +23,9 @@ export function transformToQuotationItem(finalProdsArray) {
             productDetails[key] = data.value;
           });
           break;
+        case 'TEXT':
+          productDetails[pageId] = userInput.value
+          break;
         default:
           console.warn(`Unknown pageType: ${pageType}`);
       }

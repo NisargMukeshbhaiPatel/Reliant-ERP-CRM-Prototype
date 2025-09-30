@@ -62,8 +62,6 @@ export default function ProductList({ products }) {
   };
 
   const handleSubmit = async (userSelection) => {
-    console.log("User submitted:", userSelection);
-
     const stepData = {
       pageId: currentPageData.id,
       pageTitle: currentPageData.title,
@@ -415,7 +413,7 @@ export default function ProductList({ products }) {
                 onClick={() => {
                   const textInput = document.getElementById('textInput');
                   const textValue = textInput ? textInput.value : '';
-                  handleSubmit({ textValue });
+                  handleSubmit({ value: textValue });
                 }}
                 className="flex-1"
                 disabled={isLoadingNextPage}
