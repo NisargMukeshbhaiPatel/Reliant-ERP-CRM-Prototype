@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/dialog"
-import { getProductImageUrl } from "@/constants/pb";
+import { getPageItemImageUrl, getProductImageUrl } from "@/constants/pb";
 import { Button } from "@/components/button"
 import { Separator } from "@/components/separator"
 import { Plus, Check, Trash2, ShoppingCart } from "lucide-react"
@@ -77,11 +77,13 @@ export function WindowSummaryDialog({ products, open, onOpenChange, onDelete, ha
           <div className="space-y-4">
             {products.map((productObj, productIndex) => {
               const product = productObj.product;
+              const prodTypeSelection = productObj.userSelections[0]?.userInput;
+              const img = prodTypeSelection && getPageItemImageUrl(prodTypeSelection.id, prodTypeSelection.image)
 
               return <div key={product.id} className="space-y-3">
                 <div className="flex gap-3 items-center">
                   <img
-                    src={getProductImageUrl(product.collectionId, product.id, product.image)}
+                    src={img || getProductImageUrl(product.collectionId, product.id, product.image)}
                     alt={product.title}
                     className="h-36 w-36 rounded-lg border bg-muted object-cover flex-shrink-0"
                   />
