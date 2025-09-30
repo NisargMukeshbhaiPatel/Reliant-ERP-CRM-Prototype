@@ -215,7 +215,7 @@ export default function ProductList({ products }) {
 
     // Create configured product object
     const configuredProduct = {
-      id: selectedProduct.id, // Generate unique ID
+      id: crypto.randomUUID(), // Generate unique ID
       product: selectedProduct,
       userSelections: finalData,
       quantity: 1
@@ -437,6 +437,7 @@ export default function ProductList({ products }) {
       {/* Window Summary Dialog */}
       <WindowSummaryDialog
         products={configuredProducts}
+        setProducts={setConfiguredProducts}
         open={showSummary}
         onOpenChange={setShowSummary}
         onDelete={handleDeleteProduct}

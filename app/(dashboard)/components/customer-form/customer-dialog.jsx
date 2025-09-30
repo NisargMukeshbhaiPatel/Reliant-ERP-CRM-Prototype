@@ -12,7 +12,7 @@ import {
 import { Button } from "@/ui/components/button";
 import { Input } from "@/ui/components/input";
 import { toast } from "@/hooks/use-toast";
-import { createCustomer, checkPostcode } from "@/lib/pb/customer";
+import { checkPostcode } from "@/lib/pb/customer";
 import { getProductImageUrl } from "@/constants/pb";
 
 export default function CustomerDialog({
@@ -51,7 +51,7 @@ export default function CustomerDialog({
       setPostcodeStatus(isValid ? 'valid' : 'invalid');
       toast({
         title: isValid ? "Postcode is valid" : "Invalid postcode",
-        variant: isValid ? "default" : "destructive",
+        variant: isValid ? "success" : "destructive",
       });
     } catch (error) {
       toast({
@@ -75,18 +75,10 @@ export default function CustomerDialog({
       return;
     }
 
-    setIsLoading(true);
-    try {
-      onComplete(formData);
-      onClose();
-    } catch (error) {
-      toast({
-        title: "Failed to create customer",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    setIsLoading(true)
+    await onComplete(formData);
+    setIsLoading(false)
+    onClose();
   };
 
   const imageUrl = product?.image ? getProductImageUrl(product.collectionId, product.id, product.image) : null;

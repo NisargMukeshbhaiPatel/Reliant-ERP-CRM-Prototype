@@ -1,17 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/dialog"
 import { getPageItemImageUrl, getProductImageUrl } from "@/constants/pb";
 import { Button } from "@/components/button"
 import { Separator } from "@/components/separator"
-import { Plus, Check, Trash2, ShoppingCart } from "lucide-react"
+import { Minus, Plus, Check, Trash2, ShoppingCart } from "lucide-react"
 import CustomerDialog from "../customer-form/customer-dialog";
 
 import { transformToQuotationItem } from "@/lib/utils";
-import { saveQuotationItem } from "@/lib/pb/quotation";
+import { saveQuotation } from "@/lib/pb/quotation";
 
-export function WindowSummaryDialog({ products, open, onOpenChange, onDelete, handleSelectMoreProducts }) {
+export function WindowSummaryDialog({ products, setProducts, open, onOpenChange, onDelete, handleSelectMoreProducts }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleClick = () => {
@@ -22,16 +23,36 @@ export function WindowSummaryDialog({ products, open, onOpenChange, onDelete, ha
   };
 
   const handleCustomerComplete = async (customer) => {
-    const quotationItem = transformToQuotationItem(products);
+    const quotationItems = transformToQuotationItem(products);
     try {
-      //const customer = await createCustomer(customer);
-      await saveQuotationItem(quotationItem);
+      await saveQuotation(quotationItems, customer);
+      toast({
+        title: "Quotation Created Successfully!",
+        description: "We've received your request and will get back to you shortly",
+      });
+      setProducts([])
+
     } catch (error) {
       console.error("Error saving quotation", error)
+      toast({
+        title: error.message,
+        variant: "destructive",
+      });
     }
   };
 
-
+  const handleQuantityChange = (productId, delta) => {
+    setProducts(prevProducts =>
+      prevProducts.map(productObj => {
+        if (productObj.product.id === productId) {
+          const currentQuantity = productObj.quantity || 1;
+          const newQuantity = Math.max(1, currentQuantity + delta);
+          return { ...productObj, quantity: newQuantity };
+        }
+        return productObj;
+      })
+    );
+  };
 
   const renderSelectionValue = (selection) => {
     switch (selection.pageType) {
@@ -79,18 +100,46 @@ export function WindowSummaryDialog({ products, open, onOpenChange, onDelete, ha
               const product = productObj.product;
               const prodTypeSelection = productObj.userSelections[0]?.userInput;
               const img = prodTypeSelection && getPageItemImageUrl(prodTypeSelection.id, prodTypeSelection.image)
+              const quantity = productObj.quantity || 1;
 
-              return <div key={product.id} className="space-y-3">
-                <div className="flex gap-3 items-center">
+              return <div key={productObj.id} className="space-y-3">
+                <div className="flex gap-3 items-start">
                   <img
                     src={img || getProductImageUrl(product.collectionId, product.id, product.image)}
                     alt={product.title}
                     className="h-36 w-36 rounded-lg border bg-muted object-cover flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-3xl leading-tight text-gray-900">
+                    <h3 className="font-semibold text-2xl md:text-3xl leading-tight text-gray-900 mb-3">
                       {product.title}
                     </h3>
+
+                    {/* Quantity Controls */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-muted-foreground">Quantity:</span>
+                      <div className="flex items-center border rounded-md">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleQuantityChange(product.id, -1)}
+                          disabled={quantity <= 1}
+                          className="h-8 w-8 p-0 hover:bg-gray-400 rounded-md"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </Button>
+                        <span className="text-sm font-semibold min-w-[2rem] text-center">
+                          {quantity}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleQuantityChange(product.id, 1)}
+                          className="h-8 w-8 p-0 hover:bg-gray-400 rounded-md"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                   {onDelete && (
                     <Button
@@ -157,4 +206,3 @@ export function WindowSummaryDialog({ products, open, onOpenChange, onDelete, ha
     </>
   )
 }
-
