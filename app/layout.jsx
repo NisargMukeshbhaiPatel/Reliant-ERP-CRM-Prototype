@@ -1,13 +1,14 @@
 import "@/ui/globals.css";
-import { Inter } from "next/font/google";
+import { Figtree } from "next/font/google"
 
-import { ThemeProvider } from "@/ui/theme-provider";
-import { Toaster } from "@/ui/components/toaster";
+import { ThemeProvider } from "@/ui/theme-provider"
+import { Toaster } from "@/ui/components/toaster"
 
-const inter = Inter({ subsets: ["latin"], display: "auto" });
+const figtree = Figtree({ subsets: ["latin"], display: "auto" })
+
 export default async function RootLayout({ children }) {
   return (
-    <html lang="en" className={inter.className} suppressHydrationWarning>
+    <html lang="en" className={figtree.className} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <meta charSet="UTF-8" />
@@ -24,7 +25,7 @@ export default async function RootLayout({ children }) {
 
         <Toaster />
       </body>
-    </html>
+    </html >
   );
 }
 

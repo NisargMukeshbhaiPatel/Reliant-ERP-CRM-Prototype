@@ -39,7 +39,6 @@ export function ProductGrid({
   onSelectionChange,
   isLoading = false,
   isSubmitting = false,
-  columns = 3,
   variant = "default",
   showButton = false,
   buttonText = "Select",

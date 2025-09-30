@@ -69,7 +69,6 @@ export default function ProductList({ products }) {
       pageTitle: currentPageData.title,
       pageType: currentPageData.type,
       userInput: userSelection,
-      timestamp: new Date().toISOString()
     };
 
     const updatedFlowStack = [...flowStack];
