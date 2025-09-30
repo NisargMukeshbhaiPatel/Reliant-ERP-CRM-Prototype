@@ -1,5 +1,5 @@
 "use client";
-import { Package, LogIn, LogOut, UserCircle } from "lucide-react";
+import { FileText, UserRoundCog as Users, Package, LogIn, LogOut, UserCircle } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -58,14 +58,42 @@ export default function AppSidebar() {
             <SidebarMenuButton
               tooltip="Products"
               asChild
-              isActive={pathname === "/products"}
+              isActive={pathname === "/"}
             >
-              <Link href="/products">
+              <Link href="/">
                 <Package size={24} />
                 <span>Products</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          {user && user.expand.role?.title === "Manager" &&
+            <>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="Users"
+                  asChild
+                  isActive={pathname === "/users"}
+                >
+                  <Link href="/users">
+                    <Users size={22} />
+                    <span>Users</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="Quotations"
+                  asChild
+                  isActive={pathname === "/quotations"}
+                >
+                  <Link href="/quotations">
+                    <FileText size={24} />
+                    <span>Quotations</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </>
+          }
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
@@ -84,12 +112,11 @@ export default function AppSidebar() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        variant="ghost"
                         size="icon"
                         onClick={logout}
-                        className="shrink-0 h-10 w-10"
+                        className="shrink-0 h-9 w-9"
                       >
-                        <LogOut size={26} />
+                        <LogOut size={22} />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
