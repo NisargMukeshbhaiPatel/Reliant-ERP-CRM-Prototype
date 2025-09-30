@@ -76,7 +76,7 @@ const TableHead = React.forwardRef(({ className, ...props }, ref) => (
     className={cn(
       "h-11 px-5 first:pl-6 last:pr-6 align-middle",
       "first:rounded-l-[var(--row-radius)] last:rounded-r-[var(--row-radius)]",
-      "text-left text-[12.5px] font-semibold tracking-wide text-muted-foreground",
+      "text-left text-md font-semibold tracking-wide text-muted-foreground",
       "border-0",
       className
     )}

@@ -1,11 +1,12 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-const Input = React.forwardRef(({ className, type, focused = false, ...props }, ref) => {
+const Input = React.forwardRef(({ className, containerClass, type, focused = false, ...props }, ref) => {
   const [isFocused, setIsFocused] = React.useState(false);
 
   return (
-    <div className="relative">
+    <div className={cn("relative", containerClass)
+    } >
       <input
         type={type}
         className={cn(
@@ -27,7 +28,7 @@ const Input = React.forwardRef(({ className, type, focused = false, ...props }, 
         }}
         {...props}
       />
-    </div>
+    </div >
   );
 })
 Input.displayName = "Input"

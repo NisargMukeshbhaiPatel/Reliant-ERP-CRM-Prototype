@@ -40,11 +40,3 @@ export default class PBUser {
 
 }
 
-export async function getAllUsers() {
-  const user = new PBUser().get()
-  if (user.expand.role?.title !== "Manager") {
-    return null
-  }
-
-}
-
