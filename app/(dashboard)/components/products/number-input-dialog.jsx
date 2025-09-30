@@ -208,7 +208,7 @@ export function NumberInputDialog({
               </DialogHeader>
 
               <div className="flex-1 overflow-y-auto min-h-0">
-                <div className="space-y-4 pr-2">
+                <div className="space-y-4 p-2">
                   {product.number_inputs.map((input) => {
                     const inputProps = getInputProps(input)
 

@@ -77,11 +77,7 @@ export default function CustomerDialog({
 
     setIsLoading(true);
     try {
-      const customer = await createCustomer(formData);
-      toast({
-        title: "Customer created successfully",
-      });
-      onComplete?.(customer);
+      onComplete(formData);
       onClose();
     } catch (error) {
       toast({

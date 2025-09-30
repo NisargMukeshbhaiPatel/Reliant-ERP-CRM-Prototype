@@ -8,6 +8,9 @@ import { Separator } from "@/components/separator"
 import { Plus, Check, Trash2, ShoppingCart } from "lucide-react"
 import CustomerDialog from "../customer-form/customer-dialog";
 
+import { transformToQuotationItem } from "@/lib/utils";
+import { saveQuotationItem } from "@/lib/pb/quotation";
+
 export function WindowSummaryDialog({ products, open, onOpenChange, onDelete, handleSelectMoreProducts }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -18,9 +21,14 @@ export function WindowSummaryDialog({ products, open, onOpenChange, onDelete, ha
     setIsDialogOpen(true);
   };
 
-  const handleCustomerComplete = (customer) => {
-    console.log('Customer created:', customer);
-    console.log('Products:', products);
+  const handleCustomerComplete = async (customer) => {
+    const quotationItem = transformToQuotationItem(products);
+    try {
+      //const customer = await createCustomer(customer);
+      await saveQuotationItem(quotationItem);
+    } catch (error) {
+      console.error("Error saving quotation", error)
+    }
   };
 
 
@@ -139,7 +147,7 @@ export function WindowSummaryDialog({ products, open, onOpenChange, onDelete, ha
         </DialogContent>
       </Dialog>
       <CustomerDialog
-        product={products[0].product}
+        product={products[0]?.product}
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         onComplete={handleCustomerComplete}

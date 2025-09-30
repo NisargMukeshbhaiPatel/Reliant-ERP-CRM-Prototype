@@ -72,12 +72,10 @@ export default function ProductList({ products }) {
       timestamp: new Date().toISOString()
     };
 
-    // Add to current branch's completed steps
     const updatedFlowStack = [...flowStack];
     const currentBranch = updatedFlowStack[updatedFlowStack.length - 1];
     currentBranch.completedSteps.push(stepData);
 
-    // Determine next actions based on page type and user input
     if (currentPageData.type === "SELECTION") {
       // Check if selected item has next_pages
       if (userSelection.next_pages && userSelection.next_pages.length > 0) {
@@ -221,6 +219,7 @@ export default function ProductList({ products }) {
       id: selectedProduct.id, // Generate unique ID
       product: selectedProduct,
       userSelections: finalData,
+      quantity: 1
     };
 
     // Add to configured products list
