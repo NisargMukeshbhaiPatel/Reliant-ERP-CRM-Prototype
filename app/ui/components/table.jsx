@@ -1,26 +1,43 @@
 import * as React from "react"
-
-import { cn } from "@/lib/utils"
 import { Minus } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const Table = React.forwardRef(({ className, ...props }, ref) => (
-    <table
-      ref={ref}
-      className={cn("w-full caption-bottom text-sm", className)}
-      {...props} />
+  <table
+    ref={ref}
+    className={cn(
+      "w-full text-sm text-foreground bg-transparent",
+      "border-separate border-spacing-y-2 border-spacing-x-0",
+      "[--row-radius:theme(borderRadius.xl)]",
+      className
+    )}
+    {...props}
+  />
 ))
 Table.displayName = "Table"
 
 const TableHeader = React.forwardRef(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+  <thead
+    ref={ref}
+    className={cn(
+      "sticky top-0 z-10 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+      "[&_tr]:border-b [&_tr]:border-border/60",
+      className
+    )}
+    {...props}
+  />
 ))
 TableHeader.displayName = "TableHeader"
 
 const TableBody = React.forwardRef(({ className, ...props }, ref) => (
   <tbody
     ref={ref}
-    className={cn("[&_tr:last-child]:border-0", className)}
-    {...props} />
+    className={cn(
+      "[&_tr:last-child]:border-0",
+      className
+    )}
+    {...props}
+  />
 ))
 TableBody.displayName = "TableBody"
 
@@ -28,10 +45,13 @@ const TableFooter = React.forwardRef(({ className, ...props }, ref) => (
   <tfoot
     ref={ref}
     className={cn(
-      "border-t bg-neutral-100/50 font-medium [&>tr]:last:border-b-0 dark:bg-neutral-800/50",
+      "rounded-[var(--row-radius)] bg-muted/20",
+      "ring-1 ring-border/60",
+      "font-medium text-foreground/90",
       className
     )}
-    {...props} />
+    {...props}
+  />
 ))
 TableFooter.displayName = "TableFooter"
 
@@ -39,10 +59,14 @@ const TableRow = React.forwardRef(({ className, ...props }, ref) => (
   <tr
     ref={ref}
     className={cn(
-      "border-b border-b-accent-foreground transition-colors hover:bg-neutral-100/50 data-[state=selected]:bg-neutral-100 dark:hover:bg-neutral-800/50 dark:data-[state=selected]:bg-neutral-800",
+      "group rounded-[var(--row-radius)] bg-card",
+      "ring-1 ring-border/60 hover:ring-border/80",
+      "transition-all hover:shadow-sm",
+      "data-[state=selected]:bg-primary/5 data-[state=selected]:ring-primary/40",
       className
     )}
-    {...props} />
+    {...props}
+  />
 ))
 TableRow.displayName = "TableRow"
 
@@ -50,23 +74,34 @@ const TableHead = React.forwardRef(({ className, ...props }, ref) => (
   <th
     ref={ref}
     className={cn(
-      "h-10 px-2 text-left align-middle font-medium text-neutral-500 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] dark:text-neutral-400",
+      "h-11 px-5 first:pl-6 last:pr-6 align-middle",
+      "first:rounded-l-[var(--row-radius)] last:rounded-r-[var(--row-radius)]",
+      "text-left text-[12.5px] font-semibold tracking-wide text-muted-foreground",
+      "border-0",
       className
     )}
-    {...props} />
+    {...props}
+  />
 ))
 TableHead.displayName = "TableHead"
 
-const TableCell = React.forwardRef(({ className, children, ...props }, ref) => (
+const TableCell = React.forwardRef(({ className, children, emptyIcon, ...props }, ref) => (
   <td
     ref={ref}
     className={cn(
-      "p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+      "px-5 py-4 first:pl-6 last:pr-6 align-middle",
+      "first:rounded-l-[var(--row-radius)] last:rounded-r-[var(--row-radius)]",
+      "border-0",
+      "text-foreground",
       className
     )}
     {...props}
   >
-    {children || <Minus size={26} />}
+    {children ?? (
+      <span className="inline-flex items-center text-muted-foreground/60">
+        {emptyIcon ?? <Minus size={18} className="stroke-[1.5]" />}
+      </span>
+    )}
   </td>
 ))
 TableCell.displayName = "TableCell"
@@ -74,8 +109,9 @@ TableCell.displayName = "TableCell"
 const TableCaption = React.forwardRef(({ className, ...props }, ref) => (
   <caption
     ref={ref}
-    className={cn("mt-4 text-sm text-neutral-500 dark:text-neutral-400", className)}
-    {...props} />
+    className={cn("mt-3 text-sm text-muted-foreground/80 text-pretty", className)}
+    {...props}
+  />
 ))
 TableCaption.displayName = "TableCaption"
 
@@ -87,5 +123,6 @@ export {
   TableHead,
   TableRow,
   TableCell,
-  TableCaption,
+  TableCaption
 }
+

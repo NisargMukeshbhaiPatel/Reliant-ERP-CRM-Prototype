@@ -9,7 +9,10 @@ export default class PBAuth {
     try {
       const result = await globalPB
         .collection("users")
-        .authWithPassword(email, password);
+        .authWithPassword(email, password, {
+          expand: "role"
+        });
+
 
       if (!result?.token) throw new Error("Invalid email or password");
 
@@ -25,23 +28,6 @@ export default class PBAuth {
     }
   }
 
-  static async register(name, email, password, sendEmailWithPassword = false) {
-    try {
-      const result = await globalPB.collection("users").create({
-        name,
-        email,
-        emailVisibility: true,
-        password,
-        passwordConfirm: password,
-      });
-
-      // TODO send email w/o password
-
-      return result;
-    } catch (err) {
-      throw new Error(prettifyPBError(err.data));
-    }
-  }
 
   static getPBCookie(cookieStore) {
     return cookieStore.get(PB_AUTH_COOKIE_NAME)?.value;

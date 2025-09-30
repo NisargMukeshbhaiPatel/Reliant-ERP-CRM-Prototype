@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import PBAuth from "./auth";
-import { createPB, pbUserCache } from "./global";
+import { createPB, pbUserCache, globalPB as pb } from "./global";
 import Client from "pocketbase";
 
 export default class PBUser {
@@ -39,3 +39,12 @@ export default class PBUser {
   }
 
 }
+
+export async function getAllUsers() {
+  const user = new PBUser().get()
+  if (user.expand.role?.title !== "Manager") {
+    return null
+  }
+
+}
+
