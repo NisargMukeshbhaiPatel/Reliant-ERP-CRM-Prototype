@@ -42,7 +42,6 @@ export function QuoteDetails({ items }) {
     <div className="space-y-4">
       {items.map((item, idx) => {
         const details = Object.entries(item.product_details || {})
-        const selectionImgs = selectionEntries(item)
 
         return (
           <Card key={item.id} className="border-border">
