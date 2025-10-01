@@ -7,11 +7,9 @@ export async function getAllQuotations() {
   if (!await isManager()) {
     throw new Error("Unauthorized: Only managers");
   }
-
   try {
-    const quotations = await pb.collection('quotations').getFullList({
-      expand: 'customer,items,items.product',
-      sort: '-created'
+    const quotations = await pb.collection('actual_quotations').getFullList({
+      expand: 'customer,items,items.product,prices',
     });
     return await Promise.all(
       quotations.map(async (quotation) => {
@@ -23,7 +21,7 @@ export async function getAllQuotations() {
           phone: quotation.expand.customer.phone,
         };
         const items = await Promise.all(
-          quotation.expand.items.map(async (item) => {
+          quotation.expand.items.map(async (item, index) => {
             const productDetails = {};
             for (const [key, value] of Object.entries(item.product_details)) {
               if (typeof value === 'number') {
@@ -47,11 +45,23 @@ export async function getAllQuotations() {
                 };
               }
             }
+
+            // Get the corresponding price for this item using the same index
+            const priceData = quotation.expand.prices?.[index];
+            const price = priceData ? {
+              id: priceData.id,
+              base: priceData.base,
+              installation: priceData.installation,
+              logistics: priceData.logistics,
+              vat: priceData.vat
+            } : null;
+
             return {
               id: item.id,
-              product: item.expand?.product?.title || item.product, // Get expanded product title
+              product: item.expand?.product?.title || item.product,
               quantity: item.quantity,
-              product_details: productDetails
+              product_details: productDetails,
+              price: price // Add price for this item
             };
           })
         );
@@ -60,6 +70,8 @@ export async function getAllQuotations() {
           customer: customer,
           items: items,
           pincode: quotation.pincode,
+          price_id: quotation.price_id,
+          status: quotation.status,
           created: quotation.created
         };
       })

@@ -1,5 +1,5 @@
 "use client";
-import { FileText, UserRoundCog as Users, Package, LogIn, LogOut, UserCircle, Menu } from "lucide-react";
+import { FileText, UserRoundCog as Users, Package, LogIn, LogOut, UserCircle, Menu, BarChart3 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -113,6 +113,23 @@ export default function AppSidebar() {
                     >
                       <FileText size={24} className="text-gray-800" />
                       <span>Quotations</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip="Analytics"
+                    asChild
+                    isActive={pathname === "/analytics"}
+                  >
+                    <Link
+                      href="/analytics"
+                      onClick={() => {
+                        if (isMobile) toggleSidebar();
+                      }}
+                    >
+                      <BarChart3 size={24} className="text-gray-800" />
+                      <span>Analytics</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
