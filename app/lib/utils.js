@@ -51,7 +51,7 @@ export function matchQuery(q, query) {
   fields.push(c.first_name || "", c.last_name || "", c.email || "", c.phone || "")
 
   q.items?.forEach(item => {
-    fields.push(item.product || "", getProductLabel(item.product) || "", String(item.quantity ?? ""))
+    fields.push(item.product || "", String(item.quantity ?? ""))
 
     Object.values(item.product_details || {}).forEach(entry => {
       if ("selection" in entry) {

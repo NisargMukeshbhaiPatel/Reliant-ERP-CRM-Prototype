@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/accordion"
 import { Input } from "@/components/input"
-import { Button } from "@/components/button"
 import { Badge } from "@/components/badge"
 import { QuoteDetails } from "./quote-details"
 import { cn } from "@/lib/utils"
@@ -66,14 +65,6 @@ export function QuoteList({ data }) {
     return base.filter(q => q.items?.some(i => i.product === productFilter))
   }, [data, query, productFilter])
 
-  const toggleAll = () => {
-    if (open.length === filtered.length) {
-      setOpen([])
-    } else {
-      setOpen(filtered.map(q => q.id))
-    }
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -81,7 +72,7 @@ export function QuoteList({ data }) {
           <Input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search by ID, customer, phone, pincode, product…"
+            placeholder="Search by Customer, Phone, postcode, product…"
             className="border-4"
             containerClass="flex-grow max-w-4xl"
           />
@@ -106,14 +97,6 @@ export function QuoteList({ data }) {
               ))}
             </select>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">
-            {filtered.length} result{filtered.length === 1 ? "" : "s"}
-          </span>
-          <Button variant="secondary" size="sm" onClick={toggleAll}>
-            {open.length === filtered.length && filtered.length > 0 ? "Collapse all" : "Expand all"}
-          </Button>
         </div>
       </div>
 
