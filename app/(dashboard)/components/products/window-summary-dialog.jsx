@@ -107,7 +107,7 @@ export function WindowSummaryDialog({ products, setProducts, open, onOpenChange,
                   <img
                     src={img || getProductImageUrl(product.collectionId, product.id, product.image)}
                     alt={product.title}
-                    className="h-36 w-36 rounded-lg border bg-muted object-cover flex-shrink-0"
+                    className="h-36 w-36 rounded-lg border bg-white object-contain flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-2xl md:text-3xl leading-tight text-gray-900 mb-3">
