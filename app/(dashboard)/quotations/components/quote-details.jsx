@@ -1,41 +1,9 @@
-"use client"
-
-import { Card, CardContent } from "@/components/card"
-import { Badge } from "@/components/badge"
-import { ProductImage } from "@/(dashboard)/components/products/product-image"
+import { Badge } from "@/components/ui/badge"
+import { CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
+import { detailLabelAndValue } from "@/lib/utils"
 import { getPageItemImageUrl } from "@/constants/pb"
-
-function detailLabelAndValue(entry) {
-  if ("selection" in entry) {
-    return {
-      id: entry.selection.id,
-      label: entry.pageTitle,
-      value: entry.selection?.title ?? "",
-      image: entry.selection?.image,
-    }
-  }
-  return {
-    label: entry.title,
-    value: String(entry.value ?? ""),
-    image: undefined,
-  }
-}
-
-function selectionEntries(item) {
-  const entries = []
-  for (const [key, entry] of Object.entries(item.product_details || {})) {
-    if ("selection" in entry) {
-      entries.push({
-        key,
-        label: entry.pageTitle,
-        value: entry.selection?.title ?? "",
-        image: entry.selection?.image,
-        recordId: entry.selection?.id,
-      })
-    }
-  }
-  return entries
-}
+import { ProductImage } from "@/(dashboard)/components/products/product-image"
 
 export function QuoteDetails({ items }) {
   return (

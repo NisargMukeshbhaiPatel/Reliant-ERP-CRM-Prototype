@@ -1,69 +1,41 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/accordion"
-import { Input } from "@/components/input"
 import { Badge } from "@/components/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/select'
-import { QuoteDetails } from "./quote-details"
-import { ProductImage } from "@/(dashboard)/components/products/product-image"
-import { matchQuery } from "@/lib/utils"
-import { getPageItemImageUrl } from "@/constants/pb"
-
-function formatDate(iso) {
-  const d = new Date(iso)
-  if (isNaN(d.getTime())) return iso
-  return d.toLocaleString(undefined, {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
-
-function productChips(quote) {
-  const names = new Set()
-  quote.items?.forEach(i => names.add(i.product))
-  return Array.from(names)
-}
-
-function collectPreviewImages(q, limit = 2) {
-  const results = []
-  for (const item of q.items ?? []) {
-    for (const [, entry] of Object.entries(item.product_details ?? {})) {
-      if ("selection" in entry) {
-        const sel = entry.selection
-        if (sel?.image) {
-          results.push({
-            recordId: sel.id,
-            filename: sel.image,
-            alt: sel.title || "Selected option",
-          })
-          if (results.length >= limit) return results
-        }
-      }
-    }
-  }
-  return results
-}
+import { Button } from "@/components/button"
+import { Input } from "@/components/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/select"
+import { Card, CardContent } from "@/components/card"
+import { QuotationDialog } from "./quotation-dialog"
+import { Eye } from "lucide-react"
+import {
+  matchQuery,
+  productChips,
+  formatDate,
+} from "@/lib/utils"
 
 export function QuoteList({ data }) {
   const [query, setQuery] = useState("")
   const [productFilter, setProductFilter] = useState("all")
-  const [open, setOpen] = useState([])
+  const [selectedQuotation, setSelectedQuotation] = useState(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   const allProducts = useMemo(() => {
     const set = new Set()
-    data?.forEach(q => q.items?.forEach(i => set.add(i.product)))
+    data?.forEach((q) => q.items?.forEach((i) => set.add(i.product)))
     return Array.from(set).sort()
   }, [data])
 
   const filtered = useMemo(() => {
-    const base = data?.filter(q => matchQuery(q, query)) || []
+    const base = data?.filter((q) => matchQuery(q, query)) || []
     if (productFilter === "all") return base
-    return base.filter(q => q.items?.some(i => i.product === productFilter))
+    return base.filter((q) => q.items?.some((i) => i.product === productFilter))
   }, [data, query, productFilter])
+
+  const handleViewDetails = (quotation) => {
+    setSelectedQuotation(quotation)
+    setDialogOpen(true)
+  }
 
   return (
     <div className="space-y-4">
@@ -71,22 +43,20 @@ export function QuoteList({ data }) {
         <div className="flex w-full flex-col gap-3 md:flex-row md:items-center">
           <Input
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by Customer, Phone, postcode, product…"
             className="border-4"
             containerClass="flex-grow max-w-4xl"
           />
           <div className="flex items-center gap-2">
-            <label className="text-sm text-muted-foreground">
-              Product
-            </label>
+            <label className="text-sm text-muted-foreground">Product</label>
             <Select value={productFilter} onValueChange={setProductFilter}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {allProducts.map(p => (
+                {allProducts.map((p) => (
                   <SelectItem key={p} value={p}>
                     {p}
                   </SelectItem>
@@ -97,22 +67,20 @@ export function QuoteList({ data }) {
         </div>
       </div>
 
-      <Accordion
-        type="multiple"
-        value={open}
-        onValueChange={v => setOpen(v)}
-        className="divide-y rounded-md border"
-      >
-        {filtered.map(q => {
+      <div className="space-y-3">
+        {filtered.map((q) => {
           const chips = productChips(q)
-          const thumbs = collectPreviewImages(q, 3)
           const itemCount = q.items?.length ?? 0
 
           return (
-            <AccordionItem key={q.id} value={q.id} className="px-3">
-              <AccordionTrigger className="py-3 hover:no-underline">
-                <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div className="min-w-0">
+            <Card
+              key={q.id}
+              className="border-border hover:border-primary/50 transition-colors cursor-pointer"
+              onClick={() => handleViewDetails(q)}
+            >
+              <CardContent className="p-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-[18px] font-medium truncate">
                         {q.customer?.first_name} {q.customer?.last_name}
@@ -136,7 +104,8 @@ export function QuoteList({ data }) {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3 md:justify-end">
-                    <div className="flex -space-x-2" onClick={(e) => e.stopPropagation()}>
+                    {/*
+                    <div className="flex -space-x-2">
                       {thumbs.map((t, idx) => (
                         <div
                           key={`${t.recordId}-${idx}`}
@@ -154,12 +123,13 @@ export function QuoteList({ data }) {
                         </div>
                       ))}
                     </div>
+                      */}
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="secondary" className="text-xs">
                         {itemCount} item{itemCount === 1 ? "" : "s"}
                       </Badge>
                       <div className="flex flex-wrap gap-1.5">
-                        {chips.slice(0, 3).map(c => (
+                        {chips.slice(0, 3).map((c) => (
                           <Badge key={c} variant="outline" className="text-sm">
                             {c}
                           </Badge>
@@ -170,20 +140,30 @@ export function QuoteList({ data }) {
                           </Badge>
                         ) : null}
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleViewDetails(q)
+                        }}
+                      >
+                        <Eye className="h-4 w-4" />
+                        View Details
+                      </Button>
                     </div>
                   </div>
                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="pb-4">
-                <QuoteDetails items={q.items || []} />
-              </AccordionContent>
-            </AccordionItem>
+              </CardContent>
+            </Card>
           )
         })}
         {filtered.length === 0 ? (
-          <div className="p-6 text-center text-sm text-muted-foreground">No quotations found.</div>
+          <div className="p-6 text-center text-sm text-muted-foreground border rounded-md">No quotations found.</div>
         ) : null}
-      </Accordion>
+      </div>
+
+      <QuotationDialog quotation={selectedQuotation} open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   )
 }

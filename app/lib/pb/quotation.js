@@ -10,6 +10,7 @@ export async function getAllQuotations() {
   try {
     const quotations = await pb.collection('actual_quotations').getFullList({
       expand: 'customer,items,items.product,prices',
+      sort: "-updated"
     });
     return await Promise.all(
       quotations.map(async (quotation) => {
@@ -61,7 +62,7 @@ export async function getAllQuotations() {
               product: item.expand?.product?.title || item.product,
               quantity: item.quantity,
               product_details: productDetails,
-              price: price // Add price for this item
+              price: price
             };
           })
         );
@@ -127,6 +128,32 @@ export async function saveQuotation(quotationItems, customerData) {
 
   } catch (error) {
     console.error('Error saving quotation:', error);
+    throw error;
+  }
+}
+export async function updateQuotationItemPrice(priceId, { base, installation, logistics, vat }) {
+  try {
+    const updateData = {};
+    if (base !== undefined) updateData.base = base;
+    if (installation !== undefined) updateData.installation = installation;
+    if (logistics !== undefined) updateData.logistics = logistics;
+    if (vat !== undefined) updateData.vat = vat;
+
+    await pb.collection('quotation_item_prices').update(priceId, updateData);
+    return true;
+  } catch (error) {
+    console.error('Error updating quotation item price:', error);
+    throw error;
+  }
+}
+
+export async function updateQuotationPriceStatus(quotationPriceId, status) {
+  try {
+    const record = await pb.collection('quotations_prices').update(quotationPriceId, { status });
+    console.log('Quotation price status updated:', record);
+    return true;
+  } catch (error) {
+    console.error('Error updating quotation price status:', error);
     throw error;
   }
 }

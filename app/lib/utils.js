@@ -65,3 +65,61 @@ export function matchQuery(q, query) {
   return fields.join(" ").toLowerCase().includes(needle)
 }
 
+
+export function productChips(quotation) {
+  const products = quotation.items?.map((item) => item.product) || [];
+  return [...new Set(products)];
+}
+
+/*
+export function collectPreviewImages(quotation, limit = 3) {
+  const images = [];
+
+  for (const item of quotation.items || []) {
+    if (images.length >= limit) break;
+
+    const details = item.product_details || {};
+    for (const [key, entry] of Object.entries(details)) {
+      if (images.length >= limit) break;
+
+      const parsed = detailLabelAndValue(entry);
+      if (parsed.image) {
+        images.push({
+          recordId: parsed.id,
+          filename: parsed.image,
+          alt: parsed.label || key,
+        });
+      }
+    }
+  }
+
+  return images;
+}
+*/
+
+export function formatDate(dateString) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+
+export function detailLabelAndValue(entry) {
+  if ("selection" in entry) {
+    return {
+      id: entry.selection.id,
+      label: entry.pageTitle,
+      value: entry.selection?.title ?? "",
+      image: entry.selection?.image,
+    }
+  }
+  return {
+    label: entry.title,
+    value: String(entry.value ?? ""),//for num/text only product config values
+    image: undefined,
+  }
+}
