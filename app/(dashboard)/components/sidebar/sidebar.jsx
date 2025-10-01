@@ -44,10 +44,11 @@ export default function AppSidebar() {
       <SidebarHeader>
         <div className="pt-2 h-[40px] flex items-start overflow-hidden">
           <h1
-            className={`shrink-0 text-2xl font-bold text-blue-600 transition-opacity duration-300 ${!isCollapsed ? "opacity-100 delay-150" : "opacity-0"
+            className={`shrink-0 text-2xl font-bold transition-opacity duration-300 ${!isCollapsed ? "opacity-100 delay-150" : "opacity-0"
               }`}
           >
-            Reliant-CRM
+            <span className="text-gray-900">Reliant</span>
+            <span className="text-gray-600">-CRM</span>
           </h1>
         </div>
         <SidebarTrigger className="absolute right-[9px] top-[10px]" />
@@ -61,7 +62,7 @@ export default function AppSidebar() {
               isActive={pathname === "/"}
             >
               <Link href="/">
-                <Package size={24} />
+                <Package size={24} className="text-gray-800" />
                 <span>Products</span>
               </Link>
             </SidebarMenuButton>
@@ -75,7 +76,7 @@ export default function AppSidebar() {
                   isActive={pathname === "/users"}
                 >
                   <Link href="/users">
-                    <Users size={22} />
+                    <Users size={22} className="text-gray-800" />
                     <span>Users</span>
                   </Link>
                 </SidebarMenuButton>
@@ -87,7 +88,7 @@ export default function AppSidebar() {
                   isActive={pathname === "/quotations"}
                 >
                   <Link href="/quotations">
-                    <FileText size={24} />
+                    <FileText size={24} className="text-gray-800" />
                     <span>Quotations</span>
                   </Link>
                 </SidebarMenuButton>
