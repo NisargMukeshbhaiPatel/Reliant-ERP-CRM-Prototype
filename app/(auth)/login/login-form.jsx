@@ -42,6 +42,7 @@ export default function LoginForm({ existingAccounts }) {
       }
       const redirectUrl = searchParams.get("redirect") || DASHBOARD;
       router.push(redirectUrl);
+      router.refresh()
     } catch (err) {
       console.trace(err);
       let msg;
