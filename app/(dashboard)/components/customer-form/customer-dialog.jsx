@@ -30,37 +30,9 @@ export default function CustomerDialog({
   });
   const [postcodeStatus, setPostcodeStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isCheckingPostcode, setIsCheckingPostcode] = useState(false);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handlePostcodeCheck = async () => {
-    if (!formData.postcode.trim()) {
-      toast({
-        title: "Please enter a postcode",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsCheckingPostcode(true);
-    try {
-      const isValid = await checkPostcode(formData.postcode);
-      setPostcodeStatus(isValid ? 'valid' : 'invalid');
-      toast({
-        title: isValid ? "Postcode is valid" : "Invalid postcode",
-        variant: isValid ? "success" : "destructive",
-      });
-    } catch (error) {
-      toast({
-        title: "Error checking postcode",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCheckingPostcode(false);
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -165,36 +137,32 @@ export default function CustomerDialog({
                       required
                     />
                   </div>
-
                   <div className="space-y-2">
                     <label htmlFor="postcode" className="block text-sm font-semibold text-gray-600">
                       Postcode
                     </label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="postcode"
-                        placeholder="SW1A 1AA"
-                        value={formData.postcode}
-                        onChange={(e) => handleInputChange('postcode', e.target.value)}
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        variant="default"
-                        onClick={handlePostcodeCheck}
-                        disabled={isCheckingPostcode || !formData.postcode.trim()}
-                        className="px-3"
-                      >
-                        {isCheckingPostcode ? (
-                          <div className="w-4 h-4 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin" />
-                        ) : (
-                          <MapPin className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                    {postcodeStatus && (
-                      <p className={`text-xs ${postcodeStatus === 'valid' ? 'text-green-600' : 'text-red-600'}`}>
-                        {postcodeStatus === 'valid' ? 'Valid postcode' : 'Invalid postcode'}
+                    <Input
+                      id="postcode"
+                      placeholder="SW1A 1AA"
+                      value={formData.postcode}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        handleInputChange('postcode', value);
+                      }}
+                      onBlur={(e) => {
+                        const postcodeRegex = /^[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}$/i;
+                        const value = e.target.value.trim();
+                        if (value && !postcodeRegex.test(value)) {
+                          setPostcodeStatus('invalid');
+                        } else {
+                          setPostcodeStatus('');
+                        }
+                      }}
+                      className={`${postcodeStatus === 'invalid' ? 'border-red-500' : ''}`}
+                    />
+                    {postcodeStatus === 'invalid' && (
+                      <p className="text-xs text-red-600">
+                        Please enter a valid UK postcode
                       </p>
                     )}
                   </div>
