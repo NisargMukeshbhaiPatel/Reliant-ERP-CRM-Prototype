@@ -106,7 +106,7 @@ export function QuotationItemDialog({
     if (!item) return;
     setSaving(true);
     try {
-      await updateQuotationItemPrice(
+      const priceId = await updateQuotationItemPrice(
         item.price?.id,
         prices,
         item.id,
@@ -114,6 +114,7 @@ export function QuotationItemDialog({
       );
       onPriceUpdate(item.id, prices);
       setHasChanges(false);
+      quotation.price_id = priceId //Temp to allow user to change quote status
       router.refresh();
       onOpenChange(false);
       setAiPredictions(null);
@@ -286,12 +287,12 @@ export function QuotationItemDialog({
                     <Input
                       id="base"
                       type="number"
-                      min="0"
+                      min="1"
                       step="0.01"
                       value={prices.base ?? ''}
                       onChange={(e) => {
                         const value = e.target.value === '' ? null : Number.parseFloat(e.target.value);
-                        if (value === null || value >= 0) {
+                        if (value === null || value > 0) {
                           updatePriceField("base", value);
                         }
                       }}

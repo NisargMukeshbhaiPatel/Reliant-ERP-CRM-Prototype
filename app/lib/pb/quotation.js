@@ -142,6 +142,7 @@ export async function updateQuotationItemPrice(priceId, { base, installation, lo
     };
 
     let finalPriceId = priceId;
+    let quotationPriceId = quotationId;
 
     // If priceId doesn't exist, create new records
     if (!priceId) {
@@ -163,18 +164,19 @@ export async function updateQuotationItemPrice(priceId, { base, installation, lo
         });
       } catch (error) {
         // quotations_prices doesn't exist, create it
-        await pb.collection('quotations_prices').create({
+        const newQuoPrice = await pb.collection('quotations_prices').create({
           quotation: quotationId,
           prices: [finalPriceId],
           status: 'REVIEW'
         });
+        quotationPriceId = newQuoPrice.id
       }
     } else {
       // Update existing price record
       await pb.collection('quotation_item_prices').update(priceId, priceData);
     }
 
-    return finalPriceId;
+    return quotationPriceId;
   } catch (error) {
     console.error('Error updating quotation item price:', error);
     throw error;
