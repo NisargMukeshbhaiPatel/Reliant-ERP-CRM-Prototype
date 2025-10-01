@@ -52,7 +52,7 @@ export function QuoteDetails({ items }) {
                   <Badge variant="secondary" className="text-xs">
                     {item.product}
                   </Badge>
-                  <span className="text-sm text-muted-foreground">Qty: {item.quantity}</span>
+                  <span className="text-sm text-muted-foreground">Quantity: {item.quantity}</span>
                 </div>
               </div>
 

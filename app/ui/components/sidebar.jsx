@@ -261,9 +261,9 @@ const SidebarTrigger = React.forwardRef(({ className, ...props }, ref) => {
       {...props}
     >
       {state === "collapsed" ? (
-        <PanelLeftOpen size={28} />
+        <PanelLeftOpen className="text-gray-800" size={28} />
       ) : (
-        <PanelLeftClose size={28} />
+        <PanelLeftClose className="text-gray-800" size={28} />
       )}
       <span className="sr-only">Toggle Sidebar</span>
     </Button>

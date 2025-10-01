@@ -4,8 +4,8 @@ import { useState, useMemo } from "react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/accordion"
 import { Input } from "@/components/input"
 import { Badge } from "@/components/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/select'
 import { QuoteDetails } from "./quote-details"
-import { cn } from "@/lib/utils"
 import { ProductImage } from "@/(dashboard)/components/products/product-image"
 import { matchQuery } from "@/lib/utils"
 import { getPageItemImageUrl } from "@/constants/pb"
@@ -77,25 +77,22 @@ export function QuoteList({ data }) {
             containerClass="flex-grow max-w-4xl"
           />
           <div className="flex items-center gap-2">
-            <label className="text-sm text-muted-foreground" htmlFor="product-filter">
+            <label className="text-sm text-muted-foreground">
               Product
             </label>
-            <select
-              id="product-filter"
-              className={cn(
-                "h-9 rounded-md border bg-background px-3 text-sm",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              )}
-              value={productFilter}
-              onChange={e => setProductFilter(e.target.value)}
-            >
-              <option value="all">All</option>
-              {allProducts.map(p => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
+            <Select value={productFilter} onValueChange={setProductFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {allProducts.map(p => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -117,7 +114,7 @@ export function QuoteList({ data }) {
                 <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-medium truncate">
+                      <span className="text-[18px] font-medium truncate">
                         {q.customer?.first_name} {q.customer?.last_name}
                       </span>
                       {q.customer?.email ? (
@@ -131,12 +128,10 @@ export function QuoteList({ data }) {
                       <span>Created {formatDate(q.created)}</span>
                       {q.pincode ? (
                         <>
-                          <span>•</span>
-                          <span>Postcode {q.pincode}</span>
+                          <span>• Postcode {q.pincode}</span>
                         </>
                       ) : null}
-                      <span className="hidden md:inline">•</span>
-                      <span className="hidden md:inline">Ref {q.id.slice(0, 8)}</span>
+                      <span className="hidden md:inline">• Ref {q.id.slice(0, 8)}</span>
                     </div>
                   </div>
 
@@ -145,7 +140,7 @@ export function QuoteList({ data }) {
                       {thumbs.map((t, idx) => (
                         <div
                           key={`${t.recordId}-${idx}`}
-                          className="w-8 h-8 rounded-full overflow-hidden ring-1 ring-background"
+                          className="w-8 h-8 border rounded-full overflow-hidden ring-1 ring-background"
                         >
                           <ProductImage
                             src={getPageItemImageUrl(t.recordId, t.filename)}
@@ -165,12 +160,12 @@ export function QuoteList({ data }) {
                       </Badge>
                       <div className="flex flex-wrap gap-1.5">
                         {chips.slice(0, 3).map(c => (
-                          <Badge key={c} variant="outline" className="text-[10px]">
+                          <Badge key={c} variant="outline" className="text-sm">
                             {c}
                           </Badge>
                         ))}
                         {chips.length > 3 ? (
-                          <Badge variant="outline" className="text-[10px]">
+                          <Badge variant="outline" className="text-sm">
                             +{chips.length - 3} more
                           </Badge>
                         ) : null}

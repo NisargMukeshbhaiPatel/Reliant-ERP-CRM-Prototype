@@ -5,10 +5,9 @@ import { createCustomer } from "./customer";
 export async function getAllQuotations() {
   try {
     const quotations = await pb.collection('quotations').getFullList({
-      expand: 'customer,items',
+      expand: 'customer,items,items.product',
       sort: '-created'
     });
-
     return await Promise.all(
       quotations.map(async (quotation) => {
         const customer = {
@@ -18,11 +17,9 @@ export async function getAllQuotations() {
           email: quotation.expand.customer.email,
           phone: quotation.expand.customer.phone,
         };
-
         const items = await Promise.all(
           quotation.expand.items.map(async (item) => {
             const productDetails = {};
-
             for (const [key, value] of Object.entries(item.product_details)) {
               if (typeof value === 'number') {
                 const numberItem = await pb.collection('page_number_items').getOne(key);
@@ -45,16 +42,14 @@ export async function getAllQuotations() {
                 };
               }
             }
-
             return {
               id: item.id,
-              product: item.product,
+              product: item.expand?.product?.title || item.product, // Get expanded product title
               quantity: item.quantity,
               product_details: productDetails
             };
           })
         );
-
         return {
           id: quotation.id,
           customer: customer,
