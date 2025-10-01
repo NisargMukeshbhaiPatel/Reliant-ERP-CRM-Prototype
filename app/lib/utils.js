@@ -5,6 +5,7 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
+//quotation utils
 export function transformToQuotationItem(finalProdsArray) {
   return finalProdsArray.map(finalProdsObject => {
     const { product, quantity, userSelections } = finalProdsObject;
@@ -38,3 +39,29 @@ export function transformToQuotationItem(finalProdsArray) {
     };
   });
 }
+
+export function matchQuery(q, query) {
+  if (!query) return true
+  const needle = query.trim().toLowerCase()
+  const fields = []
+
+  fields.push(q.id || "", q.pincode || "", q.created || "")
+
+  const c = q.customer || {}
+  fields.push(c.first_name || "", c.last_name || "", c.email || "", c.phone || "")
+
+  q.items?.forEach(item => {
+    fields.push(item.product || "", getProductLabel(item.product) || "", String(item.quantity ?? ""))
+
+    Object.values(item.product_details || {}).forEach(entry => {
+      if ("selection" in entry) {
+        fields.push(entry.pageTitle || "", entry.selection?.title || "")
+      } else {
+        fields.push(entry.title || "", String(entry.value ?? ""))
+      }
+    })
+  })
+
+  return fields.join(" ").toLowerCase().includes(needle)
+}
+
