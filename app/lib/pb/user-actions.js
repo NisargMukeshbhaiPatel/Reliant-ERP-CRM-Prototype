@@ -2,7 +2,7 @@
 import PBUser from "./user";
 import { globalPB as pb } from "./global";
 
-async function isManager() {
+export async function isManager() {
   const pbUser = await PBUser.get();
   if (!pbUser) return false;
   const user = pbUser.getUser();

@@ -1,8 +1,13 @@
 "use server"
 import { globalPB as pb } from "./global";
 import { createCustomer } from "./customer";
+import { isManager } from "./user-actions";
 
 export async function getAllQuotations() {
+  if (!await isManager()) {
+    throw new Error("Unauthorized: Only managers");
+  }
+
   try {
     const quotations = await pb.collection('quotations').getFullList({
       expand: 'customer,items,items.product',
