@@ -131,16 +131,50 @@ export async function saveQuotation(quotationItems, customerData) {
     throw error;
   }
 }
-export async function updateQuotationItemPrice(priceId, { base, installation, logistics, vat }) {
-  try {
-    const updateData = {};
-    if (base !== undefined) updateData.base = base;
-    if (installation !== undefined) updateData.installation = installation;
-    if (logistics !== undefined) updateData.logistics = logistics;
-    if (vat !== undefined) updateData.vat = vat;
 
-    await pb.collection('quotation_item_prices').update(priceId, updateData);
-    return true;
+export async function updateQuotationItemPrice(priceId, { base, installation, logistics, vat }, itemId, quotationId) {
+  try {
+    const priceData = {
+      base: base ?? null,
+      installation: installation ?? null,
+      logistics: logistics ?? null,
+      vat: vat ?? null,
+    };
+
+    let finalPriceId = priceId;
+
+    // If priceId doesn't exist, create new records
+    if (!priceId) {
+      priceData.item = itemId;
+      const newItemPrice = await pb.collection('quotation_item_prices').create(priceData);
+      finalPriceId = newItemPrice.id;
+
+      //checkie checkie if quotations_prices exists for this quotation
+      let quotationPrice;
+      try {
+        quotationPrice = await pb.collection('quotations_prices').getFirstListItem(
+          `quotation="${quotationId}"`
+        );
+
+        // Update existing quotations_prices with the new price id
+        const updatedPrices = [...(quotationPrice.prices || []), finalPriceId];
+        await pb.collection('quotations_prices').update(quotationPrice.id, {
+          prices: updatedPrices
+        });
+      } catch (error) {
+        // quotations_prices doesn't exist, create it
+        await pb.collection('quotations_prices').create({
+          quotation: quotationId,
+          prices: [finalPriceId],
+          status: 'REVIEW'
+        });
+      }
+    } else {
+      // Update existing price record
+      await pb.collection('quotation_item_prices').update(priceId, priceData);
+    }
+
+    return finalPriceId;
   } catch (error) {
     console.error('Error updating quotation item price:', error);
     throw error;

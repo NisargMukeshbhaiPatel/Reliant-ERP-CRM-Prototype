@@ -34,11 +34,11 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
         if (!item.price) { //no quotation price set
           initialPrices[item.id] = {
             itemId: item.id,
-            priceId: "",
-            base: 0,
-            installation: 0,
-            logistics: 0,
-            vat: 0,
+            priceId: null,
+            base: null,
+            installation: null,
+            logistics: null,
+            vat: null,
           }
         } else {
           initialPrices[item.id] = {
@@ -63,14 +63,21 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
 
   const calculateItemPrice = (prices) => {
     const { base, installation, logistics, vat } = prices
+
+    if (base == null || installation == null || logistics == null || vat == null) {
+      return null
+    }
     return base + installation + logistics + base * vat
   }
 
   const totalPrice = useMemo(() => {
     return Object.values(itemPrices).reduce((sum, prices) => {
-      return sum + calculateItemPrice(prices)
+      const itemPrice = calculateItemPrice(prices)
+      // Only add to sum if itemPrice is valid (not null)
+      return itemPrice !== null ? sum + itemPrice : sum
     }, 0)
   }, [itemPrices])
+
   const fetchAISummary = async (quotationId) => {
     setLoadingSummary(true)
     try {
@@ -85,7 +92,17 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
       setLoadingSummary(false)
     }
   }
+
   const handleStatusChange = async (newStatus) => {
+    if (!quotation.price_id) {
+      toast({
+        title: "Cannot change status",
+        description: "Price information is incomplete. Please add prices to all items first.",
+        variant: "destructive"
+      })
+      return
+    }
+
     setPriceStatus(newStatus)
     setUpdatingStatus(true)
     try {
@@ -227,7 +244,6 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
                     vat: 0.2,
                   }
                   const itemPrice = calculateItemPrice(prices)
-                  const details = Object.entries(item.product_details || {})
 
                   return (
                     <Card
@@ -244,7 +260,9 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
                           <div className="flex items-center gap-3">
                             <div className="text-right">
                               <p className="text-xs text-muted-foreground">Item Price</p>
-                              <p className="text-base font-semibold">£{itemPrice.toFixed(2)}</p>
+                              <p className="text-base font-semibold">
+                                {itemPrice !== null ? `£${itemPrice.toFixed(2)}` : '-'}
+                              </p>
                             </div>
                             <ChevronRight className="h-5 w-5 text-muted-foreground" />
                           </div>

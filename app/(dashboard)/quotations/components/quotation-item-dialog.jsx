@@ -29,10 +29,10 @@ export function QuotationItemDialog({
 }) {
   const router = useRouter()
   const [prices, setPrices] = useState({
-    base: 0,
-    installation: 0,
-    logistics: 0,
-    vat: 0.2,
+    base: null,
+    installation: null,
+    logistics: null,
+    vat: null,
   })
   const [aiPredictions, setAiPredictions] = useState(null)
   const [loadingAI, setLoadingAI] = useState(false)
@@ -42,10 +42,10 @@ export function QuotationItemDialog({
   useEffect(() => {
     if (initialPrices) {
       setPrices({
-        base: initialPrices.base,
-        installation: initialPrices.installation,
-        logistics: initialPrices.logistics,
-        vat: initialPrices.vat,
+        base: initialPrices.base ?? null,
+        installation: initialPrices.installation ?? null,
+        logistics: initialPrices.logistics ?? null,
+        vat: initialPrices.vat ?? null,
       })
       setHasChanges(false)
     }
@@ -103,26 +103,31 @@ export function QuotationItemDialog({
   }
 
   const handleSave = async () => {
-    if (!item || !initialPrices) return
-    setSaving(true)
+    if (!item) return;
+    setSaving(true);
     try {
-      await updateQuotationItemPrice(item.price.id, prices)
-      onPriceUpdate(item.id, prices)
-      setHasChanges(false)
-      router.refresh() //TODO: inefficient as refetches (will replace with optimistic update/react-query)
-      onOpenChange(false)
+      await updateQuotationItemPrice(
+        item.price?.id,
+        prices,
+        item.id,
+        quotation.id
+      );
+      onPriceUpdate(item.id, prices);
+      setHasChanges(false);
+      router.refresh();
+      onOpenChange(false);
       setAiPredictions(null);
       setLoadingAI(false);
     } catch (error) {
       toast({
         title: "Failed to Save Prices (Retry)",
         variant: "destructive"
-      })
-      console.error("Failed to save prices:", error)
+      });
+      console.error("Failed to save prices:", error);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleBack = () => {
     onOpenChange(hasChanges) // Pass hasChanges to determine if summary should refresh
@@ -135,6 +140,7 @@ export function QuotationItemDialog({
 
   const itemPrice = calculateItemPrice(prices)
   const details = Object.entries(item.product_details || {})
+  const isPriceValid = itemPrice !== null
 
   return (
     <Dialog open={open} onOpenChange={() => handleBack()}>
@@ -282,16 +288,16 @@ export function QuotationItemDialog({
                       type="number"
                       min="0"
                       step="0.01"
-                      value={prices.base}
+                      value={prices.base ?? ''}
                       onChange={(e) => {
-                        const value = Number.parseFloat(e.target.value);
-                        if (value >= 0 || e.target.value === '') {
-                          updatePriceField("base", value || 0);
+                        const value = e.target.value === '' ? null : Number.parseFloat(e.target.value);
+                        if (value === null || value >= 0) {
+                          updatePriceField("base", value);
                         }
                       }}
+                      placeholder="Enter base price (optional)"
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="installation">Installation (£)</Label>
                     <Input
@@ -299,16 +305,16 @@ export function QuotationItemDialog({
                       type="number"
                       min="0"
                       step="0.01"
-                      value={prices.installation}
+                      value={prices.installation ?? ''}
                       onChange={(e) => {
-                        const value = Number.parseFloat(e.target.value);
-                        if (value >= 0 || e.target.value === '') {
-                          updatePriceField("installation", value || 0);
+                        const value = e.target.value === '' ? null : Number.parseFloat(e.target.value);
+                        if (value === null || value >= 0) {
+                          updatePriceField("installation", value);
                         }
                       }}
+                      placeholder="Enter installation cost (optional)"
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="logistics">Logistics (£)</Label>
                     <Input
@@ -316,16 +322,16 @@ export function QuotationItemDialog({
                       type="number"
                       min="0"
                       step="0.01"
-                      value={prices.logistics}
+                      value={prices.logistics ?? ''}
                       onChange={(e) => {
-                        const value = Number.parseFloat(e.target.value);
-                        if (value >= 0 || e.target.value === '') {
-                          updatePriceField("logistics", value || 0);
+                        const value = e.target.value === '' ? null : Number.parseFloat(e.target.value);
+                        if (value === null || value >= 0) {
+                          updatePriceField("logistics", value);
                         }
                       }}
+                      placeholder="Enter logistics cost (optional)"
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="vat">VAT Rate (decimal)</Label>
                     <Input
@@ -334,14 +340,14 @@ export function QuotationItemDialog({
                       min="0"
                       max="1"
                       step="0.01"
-                      value={prices.vat}
+                      value={prices.vat ?? ''}
                       onChange={(e) => {
-                        const value = Number.parseFloat(e.target.value);
-                        if ((value >= 0 && value <= 1) || e.target.value === '') {
-                          updatePriceField("vat", value || 0);
+                        const value = e.target.value === '' ? null : Number.parseFloat(e.target.value);
+                        if (value === null || (value >= 0 && value <= 1)) {
+                          updatePriceField("vat", value);
                         }
                       }}
-                      placeholder="e.g., 0.2 for 20%"
+                      placeholder="e.g., 0.2 for 20% (optional)"
                     />
                   </div>
                 </div>
@@ -350,24 +356,28 @@ export function QuotationItemDialog({
                 <div className="p-3 bg-muted/50 rounded-md space-y-1 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Base:</span>
-                    <span>£{prices.base.toFixed(2)}</span>
+                    <span>{prices.base != null ? `£${prices.base.toFixed(2)}` : '-'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Installation:</span>
-                    <span>£{prices.installation.toFixed(2)}</span>
+                    <span>{prices.installation != null ? `£${prices.installation.toFixed(2)}` : '-'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Logistics:</span>
-                    <span>£{prices.logistics.toFixed(2)}</span>
+                    <span>{prices.logistics != null ? `£${prices.logistics.toFixed(2)}` : '-'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">VAT ({(prices.vat * 100).toFixed(0)}%):</span>
-                    <span>£{(prices.base * prices.vat).toFixed(2)}</span>
+                    <span className="text-muted-foreground">
+                      VAT {prices.vat != null ? `(${(prices.vat * 100).toFixed(0)}%)` : ''}:
+                    </span>
+                    <span>
+                      {prices.base != null && prices.vat != null ? `£${(prices.base * prices.vat).toFixed(2)}` : '-'}
+                    </span>
                   </div>
                   <Separator className="my-2" />
                   <div className="flex justify-between font-semibold">
                     <span>Item Total:</span>
-                    <span>£{itemPrice.toFixed(2)}</span>
+                    <span>{isPriceValid ? `£${itemPrice.toFixed(2)}` : '-'}</span>
                   </div>
                 </div>
 
