@@ -17,6 +17,7 @@ import {
 export function QuoteList({ data }) {
   const [query, setQuery] = useState("")
   const [productFilter, setProductFilter] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("all")
   const [selectedQuotation, setSelectedQuotation] = useState(null)
   const [dialogOpen, setDialogOpen] = useState(false)
 
@@ -27,10 +28,18 @@ export function QuoteList({ data }) {
   }, [data])
 
   const filtered = useMemo(() => {
-    const base = data?.filter((q) => matchQuery(q, query)) || []
-    if (productFilter === "all") return base
-    return base.filter((q) => q.items?.some((i) => i.product === productFilter))
-  }, [data, query, productFilter])
+    let base = data?.filter((q) => matchQuery(q, query)) || []
+
+    if (productFilter !== "all") {
+      base = base.filter((q) => q.items?.some((i) => i.product === productFilter))
+    }
+
+    if (statusFilter !== "all") {
+      base = base.filter((q) => q.status === statusFilter)
+    }
+
+    return base
+  }, [data, query, productFilter, statusFilter])
 
   const handleViewDetails = (quotation) => {
     setSelectedQuotation(quotation)
@@ -61,6 +70,20 @@ export function QuoteList({ data }) {
                     {p}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted-foreground">Status</label>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="REVIEW">Review</SelectItem>
+                <SelectItem value="FINALIZED">Finalized</SelectItem>
+                <SelectItem value="CANCELLED">Cancelled</SelectItem>
               </SelectContent>
             </Select>
           </div>
