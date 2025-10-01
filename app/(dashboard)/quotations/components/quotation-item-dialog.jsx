@@ -280,39 +280,67 @@ export function QuotationItemDialog({
                     <Input
                       id="base"
                       type="number"
+                      min="0"
                       step="0.01"
                       value={prices.base}
-                      onChange={(e) => updatePriceField("base", Number.parseFloat(e.target.value) || 0)}
+                      onChange={(e) => {
+                        const value = Number.parseFloat(e.target.value);
+                        if (value >= 0 || e.target.value === '') {
+                          updatePriceField("base", value || 0);
+                        }
+                      }}
                     />
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="installation">Installation (£)</Label>
                     <Input
                       id="installation"
                       type="number"
+                      min="0"
                       step="0.01"
                       value={prices.installation}
-                      onChange={(e) => updatePriceField("installation", Number.parseFloat(e.target.value) || 0)}
+                      onChange={(e) => {
+                        const value = Number.parseFloat(e.target.value);
+                        if (value >= 0 || e.target.value === '') {
+                          updatePriceField("installation", value || 0);
+                        }
+                      }}
                     />
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="logistics">Logistics (£)</Label>
                     <Input
                       id="logistics"
                       type="number"
+                      min="0"
                       step="0.01"
                       value={prices.logistics}
-                      onChange={(e) => updatePriceField("logistics", Number.parseFloat(e.target.value) || 0)}
+                      onChange={(e) => {
+                        const value = Number.parseFloat(e.target.value);
+                        if (value >= 0 || e.target.value === '') {
+                          updatePriceField("logistics", value || 0);
+                        }
+                      }}
                     />
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="vat">VAT Rate (decimal)</Label>
                     <Input
                       id="vat"
                       type="number"
+                      min="0"
+                      max="1"
                       step="0.01"
                       value={prices.vat}
-                      onChange={(e) => updatePriceField("vat", Number.parseFloat(e.target.value) || 0)}
+                      onChange={(e) => {
+                        const value = Number.parseFloat(e.target.value);
+                        if ((value >= 0 && value <= 1) || e.target.value === '') {
+                          updatePriceField("vat", value || 0);
+                        }
+                      }}
                       placeholder="e.g., 0.2 for 20%"
                     />
                   </div>
