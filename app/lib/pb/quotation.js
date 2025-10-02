@@ -1,10 +1,10 @@
 "use server"
 import { globalPB as pb } from "./global";
 import { createCustomer } from "./customer";
-import { isManager } from "./user-actions";
+import { isManagerOrSales } from "./user-actions";
 
 export async function getAllQuotations() {
-  if (!await isManager()) {
+  if (!await isManagerOrSales()) {
     throw new Error("Unauthorized: Only managers");
   }
   try {
@@ -197,6 +197,9 @@ export async function updateQuotationItemPrice(priceId, { base, installation, lo
 }
 
 export async function updateQuotationPriceStatus(quotationPriceId, status) {
+  if (!await isManagerOrSales()) {
+    throw new Error("Unauthorized: Only managers");
+  }
   try {
     const record = await pb.collection('quotations_prices').update(quotationPriceId, { status });
     console.log('Quotation price status updated:', record);
@@ -208,7 +211,7 @@ export async function updateQuotationPriceStatus(quotationPriceId, status) {
 }
 
 export async function updateQuotationPin(quotationId, newPincode) {
-  if (!await isManager()) {
+  if (!await isManagerOrSales()) {
     throw new Error("Unauthorized: Only managers");
   }
   try {

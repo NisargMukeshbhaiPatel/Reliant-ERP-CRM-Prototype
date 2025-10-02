@@ -84,40 +84,6 @@ export default function AppSidebar() {
               <>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    tooltip="Users"
-                    asChild
-                    isActive={pathname === "/users"}
-                  >
-                    <Link
-                      href="/users"
-                      onClick={() => {
-                        if (isMobile) toggleSidebar();
-                      }}
-                    >
-                      <Users size={18} className="text-gray-800" />
-                      <span>Users</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    tooltip="Quotations"
-                    asChild
-                    isActive={pathname === "/quotations"}
-                  >
-                    <Link
-                      href="/quotations"
-                      onClick={() => {
-                        if (isMobile) toggleSidebar();
-                      }}
-                    >
-                      <FileText size={18} className="text-gray-800" />
-                      <span>Quotations</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
                     tooltip="Analytics"
                     asChild
                     isActive={pathname === "/analytics"}
@@ -133,7 +99,43 @@ export default function AppSidebar() {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip="Users"
+                    asChild
+                    isActive={pathname === "/users"}
+                  >
+                    <Link
+                      href="/users"
+                      onClick={() => {
+                        if (isMobile) toggleSidebar();
+                      }}
+                    >
+                      <Users size={18} className="text-gray-800" />
+                      <span>Users</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </>
+            }
+            {user && (user.expand.role?.title === "Manager" || user.expand.role?.title === "Sales") &&
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="Quotations"
+                  asChild
+                  isActive={pathname === "/quotations"}
+                >
+                  <Link
+                    href="/quotations"
+                    onClick={() => {
+                      if (isMobile) toggleSidebar();
+                    }}
+                  >
+                    <FileText size={18} className="text-gray-800" />
+                    <span>Quotations</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             }
           </SidebarMenu>
         </SidebarContent>

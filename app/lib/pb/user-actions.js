@@ -12,6 +12,12 @@ export async function isManager() {
   const user = pbUser.getUser();
   return user.expand.role?.title === "Manager"; //Should use a const/or fetch from db
 }
+export async function isManagerOrSales() {
+  const pbUser = await PBUser.get();
+  if (!pbUser) return false;
+  const user = pbUser.getUser();
+  return user.expand.role?.title === "Manager" || user.expand.role?.title === "Sales";
+}
 
 export async function getAllUsers() {
   if (!await isManager()) {
