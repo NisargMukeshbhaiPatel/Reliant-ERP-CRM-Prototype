@@ -3,8 +3,10 @@
 import { useState, useMemo, useEffect } from "react"
 import { useRouter } from 'next/navigation'
 import { toast } from "@/hooks/use-toast"
+import { Button } from "@/components/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/dialog"
-import { Phone, Mail, MapPin, Calendar, ChevronRight } from "lucide-react"
+import { Phone, Mail, MapPin, Pencil, Calendar, ChevronRight } from "lucide-react"
+import { Input } from "@/components/input"
 import { Label } from "@/components/label"
 import { Badge } from "@/components/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/card"
@@ -14,6 +16,7 @@ import { ScrollArea } from "@/components/scroll-area"
 import { formatDate } from "@/lib/utils"
 import { QuotationItemDialog } from "./quotation-item-dialog"
 import { updateQuotationPriceStatus } from "@/lib/pb/quotation"
+import { updateCustomer } from "@/lib/pb/customer"
 
 // Helper function to get status badge properties
 const getStatusBadge = (status) => {
@@ -40,12 +43,21 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
   const [selectedItem, setSelectedItem] = useState(null)
   const [itemDialogOpen, setItemDialogOpen] = useState(false)
 
+  // Customer edit states
+  const [editCustomerOpen, setEditCustomerOpen] = useState(false)
+  const [customerForm, setCustomerForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+  })
+  const [updatingCustomer, setUpdatingCustomer] = useState(false)
 
   useEffect(() => {
     if (quotation?.items) {
       const initialPrices = {}
       quotation.items.forEach((item) => {
-        if (!item.price) { //no quotation price set
+        if (!item.price) {
           initialPrices[item.id] = {
             itemId: item.id,
             priceId: null,
@@ -64,7 +76,6 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
             vat: item.price.vat,
           }
         }
-        console.log(item)
       })
       setItemPrices(initialPrices)
       setPriceStatus(quotation.status || "REVIEW")
@@ -73,7 +84,21 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
         fetchAISummary(quotation.id)
       }
     }
+
+    // Initialize customer form with existing data
+    if (quotation?.customer) {
+      setCustomerForm(getInitialCustomer())
+    }
   }, [quotation])
+
+  const getInitialCustomer = () => {
+    return {
+      firstName: quotation.customer.first_name || "",
+      lastName: quotation.customer.last_name || "",
+      email: quotation.customer.email || "",
+      phone: quotation.customer.phone || "",
+    }
+  }
 
   const calculateItemPrice = (prices) => {
     const { base, installation, logistics, vat } = prices
@@ -87,7 +112,6 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
   const totalPrice = useMemo(() => {
     return Object.values(itemPrices).reduce((sum, prices) => {
       const itemPrice = calculateItemPrice(prices)
-      // Only add to sum if itemPrice is valid (not null)
       return itemPrice !== null ? sum + itemPrice : sum
     }, 0)
   }, [itemPrices])
@@ -121,14 +145,13 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
     setUpdatingStatus(true)
     try {
       await updateQuotationPriceStatus(quotation.price_id, newStatus)
-      router.refresh() //TODO: replace this
+      router.refresh()
     } catch (error) {
       toast({
         title: "Failed to Update Status (Retry)",
         variant: "destructive"
       })
       console.error("Failed to update status:", error)
-      //Revert the status on error
       setPriceStatus(priceStatus)
     } finally {
       setUpdatingStatus(false)
@@ -138,18 +161,19 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
   const handleItemClick = (item) => {
     setSelectedItem(item)
     setItemDialogOpen(true)
-    onOpenChange(false) // Close main dialog
+    onOpenChange(false)
   }
 
   const handleItemDialogClose = (shouldRefreshSummary = false) => {
     setItemDialogOpen(false)
     setSelectedItem(null)
-    onOpenChange(true) // Reopen main dialog
+    onOpenChange(true)
 
     if (shouldRefreshSummary && quotation?.id) {
       fetchAISummary(quotation.id)
     }
   }
+
   const handlePriceUpdate = (itemId, newPrices) => {
     setItemPrices((prev) => ({
       ...prev,
@@ -158,6 +182,50 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
         ...newPrices,
       },
     }))
+  }
+
+  const handleEditCustomer = () => {
+    setCustomerForm(getInitialCustomer())
+    setEditCustomerOpen(true)
+    onOpenChange(false)
+  }
+
+  const handleCustomerFormChange = (field, value) => {
+    setCustomerForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const handleCustomerUpdate = async (e) => {
+    e.preventDefault()
+    setUpdatingCustomer(true)
+    try {
+      await updateCustomer(quotation.customer.id, customerForm)
+      //temp update the quotation object with new customer data
+      quotation.customer = {
+        ...quotation.customer,
+        first_name: customerForm.firstName,
+        last_name: customerForm.lastName,
+        email: customerForm.email,
+        phone: customerForm.phone,
+      }
+      toast({
+        title: "Customer updated successfully",
+      })
+      setEditCustomerOpen(false)
+      onOpenChange(true)
+      router.refresh()
+    } catch (error) {
+      toast({
+        title: "Failed to update customer",
+        description: error.message,
+        variant: "destructive"
+      })
+      console.error("Failed to update customer:", error)
+    } finally {
+      setUpdatingCustomer(false)
+    }
   }
 
   if (!quotation) return null
@@ -178,13 +246,22 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
           </DialogHeader>
 
           <ScrollArea className="h-[calc(98vh-200px)]">
-            {/* Customer Hero Section */}
             <Card className="border-2 shadow-sm">
               <CardContent className="pt-6">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
                   <div className="flex-1 space-y-4">
-                    <div>
-                      <Badge variant="secondary" className="mb-2">Customer</Badge>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">Customer</Badge>
+                        <Badge
+                          variant="outline"
+                          className="cursor-pointer hover:bg-primary/10 transition-colors gap-1"
+                          onClick={handleEditCustomer}
+                        >
+                          <Pencil className="h-3 w-3" />
+                          Edit
+                        </Badge>
+                      </div>
                       <h3 className="text-xl font-semibold tracking-tight">
                         {quotation.customer?.first_name} {quotation.customer?.last_name}
                       </h3>
@@ -202,7 +279,6 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
                           <span>{quotation.customer.phone}</span>
                         </a>
                       )}
-
                       {quotation.customer?.email && (
                         <a
                           href={`mailto:${quotation.customer.email}`}
@@ -231,7 +307,7 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </Card>           {/* Customer Hero Section */}
 
             <div className="space-y-6 mt-4">
               {/* AI Summary */}
@@ -324,7 +400,82 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
             </div>
           </ScrollArea>
         </DialogContent>
-      </Dialog >
+      </Dialog>
+
+      {/* Customer Edit Dialog */}
+      <Dialog open={editCustomerOpen} onOpenChange={(open) => {
+        setEditCustomerOpen(open)
+        if (!open) onOpenChange(true)
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Customer</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCustomerUpdate} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First Name</Label>
+              <Input
+                id="firstName"
+                value={customerForm.firstName}
+                onChange={(e) => handleCustomerFormChange("firstName", e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                value={customerForm.lastName}
+                onChange={(e) => handleCustomerFormChange("lastName", e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={customerForm.email}
+                onChange={(e) => handleCustomerFormChange("email", e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={customerForm.phone}
+                onChange={(e) => handleCustomerFormChange("phone", e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setEditCustomerOpen(false)
+                  onOpenChange(true)
+                }}
+                disabled={updatingCustomer}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updatingCustomer}>
+                {updatingCustomer ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Customer"
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <QuotationItemDialog
         item={selectedItem}

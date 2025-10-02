@@ -16,6 +16,22 @@ export async function createCustomer(customerData) {
   }
 }
 
+export async function updateCustomer(customerId, customerData) {
+  try {
+    const customer = await pb.collection('customers').update(customerId, {
+      first_name: customerData.firstName,
+      last_name: customerData.lastName,
+      email: customerData.email,
+      phone: customerData.phone,
+    });
+    return customer;
+  } catch (error) {
+    console.error('Error updating customer:', error);
+    throw new Error('Failed to update customer');
+  }
+}
+
+
 // TODO: check postcode
 export async function checkPostcode(postcode) {
   try {
