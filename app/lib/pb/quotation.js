@@ -11,7 +11,7 @@ export async function getAllQuotations() {
     const [quotations, numberItems, selectionItems, pages] = await Promise.all([
       pb.collection('actual_quotations').getFullList({
         expand: 'customer,items,items.product,prices',
-        sort: "-updated"
+        sort: '-created'
       }),
       pb.collection('page_number_items').getFullList(),
       pb.collection('page_selection_items').getFullList(),
