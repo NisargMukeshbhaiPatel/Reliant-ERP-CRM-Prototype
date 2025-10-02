@@ -8,75 +8,88 @@ export async function getAllQuotations() {
     throw new Error("Unauthorized: Only managers");
   }
   try {
-    const quotations = await pb.collection('actual_quotations').getFullList({
-      expand: 'customer,items,items.product,prices',
-      sort: "-updated"
-    });
-    return await Promise.all(
-      quotations.map(async (quotation) => {
-        const customer = {
-          id: quotation.expand.customer.id,
-          first_name: quotation.expand.customer.first_name,
-          last_name: quotation.expand.customer.last_name,
-          email: quotation.expand.customer.email,
-          phone: quotation.expand.customer.phone,
-        };
-        const items = await Promise.all(
-          quotation.expand.items.map(async (item, index) => {
-            const productDetails = {};
-            for (const [key, value] of Object.entries(item.product_details)) {
-              if (typeof value === 'number') {
-                const numberItem = await pb.collection('page_number_items').getOne(key);
-                productDetails[key] = {
-                  id: numberItem.id,
-                  title: numberItem.title,
-                  value: value
-                };
-              } else {
-                const page = await pb.collection('pages').getOne(key);
-                const selectionItem = await pb.collection('page_selection_items').getOne(value);
-                productDetails[key] = {
-                  pageId: page.id,
-                  pageTitle: page.title,
-                  selection: {
-                    id: selectionItem.id,
-                    title: selectionItem.title,
-                    image: selectionItem.image
-                  }
-                };
-              }
+    const [quotations, numberItems, selectionItems, pages] = await Promise.all([
+      pb.collection('actual_quotations').getFullList({
+        expand: 'customer,items,items.product,prices',
+        sort: "-updated"
+      }),
+      pb.collection('page_number_items').getFullList(),
+      pb.collection('page_selection_items').getFullList(),
+      pb.collection('pages').getFullList()
+    ]);
+
+    // Create lookup maps for O(1) access
+    const numberItemsMap = new Map(numberItems.map(item => [item.id, item]));
+    const selectionItemsMap = new Map(selectionItems.map(item => [item.id, item]));
+    const pagesMap = new Map(pages.map(page => [page.id, page]));
+
+    return quotations.map(quotation => {
+      const customer = {
+        id: quotation.expand.customer.id,
+        first_name: quotation.expand.customer.first_name,
+        last_name: quotation.expand.customer.last_name,
+        email: quotation.expand.customer.email,
+        phone: quotation.expand.customer.phone,
+      };
+
+      const items = quotation.expand.items.map((item, index) => {
+        const productDetails = {};
+        for (const [key, value] of Object.entries(item.product_details || {})) {
+          if (typeof value === 'number') {
+            const numberItem = numberItemsMap.get(key);
+            if (numberItem) {
+              productDetails[key] = {
+                id: numberItem.id,
+                title: numberItem.title,
+                value: value
+              };
             }
+          } else {
+            const page = pagesMap.get(key);
+            const selectionItem = selectionItemsMap.get(value);
+            if (page && selectionItem) {
+              productDetails[key] = {
+                pageId: page.id,
+                pageTitle: page.title,
+                selection: {
+                  id: selectionItem.id,
+                  title: selectionItem.title,
+                  image: selectionItem.image
+                }
+              };
+            }
+          }
+        }
 
-            // Get the corresponding price for this item using the same index
-            const priceData = quotation.expand.prices?.[index];
-            const price = priceData ? {
-              id: priceData.id,
-              base: priceData.base,
-              installation: priceData.installation,
-              logistics: priceData.logistics,
-              vat: priceData.vat
-            } : null;
+        // Get the corresponding price for this item using the same index
+        const priceData = quotation.expand.prices?.[index];
+        const price = priceData ? {
+          id: priceData.id,
+          base: priceData.base,
+          installation: priceData.installation,
+          logistics: priceData.logistics,
+          vat: priceData.vat
+        } : null;
 
-            return {
-              id: item.id,
-              product: item.expand?.product?.title || item.product,
-              quantity: item.quantity,
-              product_details: productDetails,
-              price: price
-            };
-          })
-        );
         return {
-          id: quotation.id,
-          customer: customer,
-          items: items,
-          pincode: quotation.pincode,
-          price_id: quotation.price_id,
-          status: quotation.status,
-          created: quotation.created
+          id: item.id,
+          product: item.expand?.product?.title || item.product,
+          quantity: item.quantity,
+          product_details: productDetails,
+          price: price
         };
-      })
-    );
+      });
+
+      return {
+        id: quotation.id,
+        customer: customer,
+        items: items,
+        pincode: quotation.pincode,
+        price_id: quotation.price_id,
+        status: quotation.status,
+        created: quotation.created
+      };
+    });
   } catch (error) {
     throw error;
   }

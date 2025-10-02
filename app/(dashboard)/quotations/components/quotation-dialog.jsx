@@ -15,6 +15,20 @@ import { formatDate } from "@/lib/utils"
 import { QuotationItemDialog } from "./quotation-item-dialog"
 import { updateQuotationPriceStatus } from "@/lib/pb/quotation"
 
+// Helper function to get status badge properties
+const getStatusBadge = (status) => {
+  switch (status) {
+    case "REVIEW":
+      return { label: "Review", className: "bg-yellow-500/10 text-yellow-700 border-yellow-500/20 dark:bg-yellow-500/20 dark:text-yellow-400" }
+    case "FINALIZED":
+      return { label: "Finalized", className: "bg-green-500/10 text-green-700 border-green-500/20 dark:bg-green-500/20 dark:text-green-400" }
+    case "CANCELLED":
+      return { label: "Cancelled", className: "bg-red-500/10 text-red-700 border-red-500/20 dark:bg-red-500/20 dark:text-red-400" }
+    default:
+      return { label: "Draft", className: "bg-gray-500/10 text-gray-700 border-gray-500/20 dark:bg-gray-500/20 dark:text-gray-400" }
+  }
+}
+
 export function QuotationDialog({ quotation, open, onOpenChange }) {
   const router = useRouter()
   const [itemPrices, setItemPrices] = useState({})
@@ -148,15 +162,22 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
 
   if (!quotation) return null
 
+  const statusBadge = getStatusBadge(priceStatus)
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-5xl max-h-[98vh]">
-          <DialogHeader className="mb-4 pb-4 border-b-2 border-b-gray-400">
-            <DialogTitle className="text-2xl font-semibold">Quotation Details</DialogTitle>
+          <DialogHeader className="mb-4 pb-4 border-b-2 border-b-gray-200">
+            <div className="flex items-center justify-between pr-8">
+              <DialogTitle className="text-2xl font-semibold">Quotation Details</DialogTitle>
+              <Badge variant="outline" className={statusBadge.className}>
+                {statusBadge.label}
+              </Badge>
+            </div>
           </DialogHeader>
 
-          <ScrollArea className="h-[calc(98vh-200px)] px-4">
+          <ScrollArea className="h-[calc(98vh-200px)]">
             {/* Customer Hero Section */}
             <Card className="border-2 shadow-sm">
               <CardContent className="pt-6">

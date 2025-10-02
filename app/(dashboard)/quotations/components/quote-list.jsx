@@ -14,6 +14,20 @@ import {
   formatDate,
 } from "@/lib/utils"
 
+// Helper function to get status badge properties
+const getStatusBadge = (status) => {
+  switch (status) {
+    case "REVIEW":
+      return { label: "Review", className: "bg-yellow-500/10 text-yellow-700 border-yellow-500/20 dark:bg-yellow-500/20 dark:text-yellow-400" }
+    case "FINALIZED":
+      return { label: "Finalized", className: "bg-green-500/10 text-green-700 border-green-500/20 dark:bg-green-500/20 dark:text-green-400" }
+    case "CANCELLED":
+      return { label: "Cancelled", className: "bg-red-500/10 text-red-700 border-red-500/20 dark:bg-red-500/20 dark:text-red-400" }
+    default:
+      return { label: "Draft", className: "bg-gray-500/10 text-gray-700 border-gray-500/20 dark:bg-gray-500/20 dark:text-gray-400" }
+  }
+}
+
 export function QuoteList({ data }) {
   const [query, setQuery] = useState("")
   const [productFilter, setProductFilter] = useState("all")
@@ -38,6 +52,16 @@ export function QuoteList({ data }) {
       base = base.filter((q) => q.status === statusFilter)
     }
 
+    // Sort so unknown/undefined status appears first
+    base.sort((a, b) => {
+      const aIsUnknown = !a.status || !["REVIEW", "FINALIZED", "CANCELLED"].includes(a.status)
+      const bIsUnknown = !b.status || !["REVIEW", "FINALIZED", "CANCELLED"].includes(b.status)
+
+      if (aIsUnknown && !bIsUnknown) return -1
+      if (!aIsUnknown && bIsUnknown) return 1
+      return 0
+    })
+
     return base
   }, [data, query, productFilter, statusFilter])
 
@@ -54,7 +78,6 @@ export function QuoteList({ data }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by Customer, Phone, postcode, product…"
-            className="border-4"
             containerClass="flex-grow max-w-4xl"
           />
           <div className="flex items-center gap-2">
@@ -94,6 +117,7 @@ export function QuoteList({ data }) {
         {filtered.map((q) => {
           const chips = productChips(q)
           const itemCount = q.items?.length ?? 0
+          const statusBadge = getStatusBadge(q.status)
 
           return (
             <Card
@@ -116,13 +140,15 @@ export function QuoteList({ data }) {
                       ) : null}
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <Badge variant="outline" className={statusBadge.className}>
+                        {statusBadge.label}
+                      </Badge>
                       <span>Created {formatDate(q.created)}</span>
                       {q.pincode ? (
                         <>
-                          <span>• Postcode {q.pincode}</span>
+                          <span>{q.pincode}</span>
                         </>
                       ) : null}
-                      <span className="hidden md:inline">• Ref {q.id.slice(0, 8)}</span>
                     </div>
                   </div>
 

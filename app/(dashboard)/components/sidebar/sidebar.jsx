@@ -75,7 +75,7 @@ export default function AppSidebar() {
                     if (isMobile) toggleSidebar();
                   }}
                 >
-                  <Package size={24} className="text-gray-800" />
+                  <Package size={18} className="text-gray-800" />
                   <span>Products</span>
                 </Link>
               </SidebarMenuButton>
@@ -94,7 +94,7 @@ export default function AppSidebar() {
                         if (isMobile) toggleSidebar();
                       }}
                     >
-                      <Users size={22} className="text-gray-800" />
+                      <Users size={18} className="text-gray-800" />
                       <span>Users</span>
                     </Link>
                   </SidebarMenuButton>
@@ -111,7 +111,7 @@ export default function AppSidebar() {
                         if (isMobile) toggleSidebar();
                       }}
                     >
-                      <FileText size={24} className="text-gray-800" />
+                      <FileText size={18} className="text-gray-800" />
                       <span>Quotations</span>
                     </Link>
                   </SidebarMenuButton>
@@ -128,7 +128,7 @@ export default function AppSidebar() {
                         if (isMobile) toggleSidebar();
                       }}
                     >
-                      <BarChart3 size={24} className="text-gray-800" />
+                      <BarChart3 size={18} className="text-gray-800" />
                       <span>Analytics</span>
                     </Link>
                   </SidebarMenuButton>
@@ -142,7 +142,7 @@ export default function AppSidebar() {
             <div className="flex items-center gap-3 px-2">
               {!isCollapsed ? (
                 <>
-                  <UserCircle size={32} className="text-gray-600 shrink-0" />
+                  <UserCircle size={28} className="text-gray-600 shrink-0" />
                   <div className="flex flex-col gap-1 min-w-0 flex-1">
                     <span className="text-sm font-medium truncate">{user.name}</span>
                     <Badge variant="secondary" className="text-xs h-5 w-fit">
@@ -155,9 +155,9 @@ export default function AppSidebar() {
                         <Button
                           size="icon"
                           onClick={logout}
-                          className="shrink-0 h-9 w-9"
+                          className="shrink-0 h-9 w-9 shadow-none"
                         >
-                          <LogOut size={22} />
+                          <LogOut size={18} />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -167,7 +167,7 @@ export default function AppSidebar() {
                   </TooltipProvider>
                 </>
               ) : (
-                <UserCircle size={32} className="text-gray-600 shrink-0" />
+                <UserCircle size={28} className="text-gray-600 shrink-0" />
               )}
             </div>
           ) : (
@@ -175,7 +175,7 @@ export default function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <Link href="/login">
-                    <LogIn size={24} />
+                    <LogIn size={18} />
                     <span>Login</span>
                   </Link>
                 </SidebarMenuButton>
