@@ -227,11 +227,10 @@ export default function ProductList({ products }) {
     setShowSummary(true);
   };
 
-  const handleDeleteProduct = (productId) => {
-    setConfiguredProducts(prev => prev.filter(p => p.id !== productId));
+  const handleDeleteProduct = (productObjId) => {
+    setConfiguredProducts(prev => prev.filter(p => p.id !== productObjId));
     toast({
       title: "Product removed",
-      variant: "success"
     });
   };
 

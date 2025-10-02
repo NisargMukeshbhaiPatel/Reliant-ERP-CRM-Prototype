@@ -13,52 +13,48 @@ import { transformToQuotationItem } from "@/lib/utils";
 import { saveQuotation } from "@/lib/pb/quotation";
 
 export function WindowSummaryDialog({ products, setProducts, open, onOpenChange, onDelete, handleSelectMoreProducts }) {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const handleClick = () => {
-    console.log("Final Data", products)
-    if (!products || products.length === 0) return;
-    onOpenChange(false);
-    setIsDialogOpen(true);
-  };
+    if (!products || products.length === 0) return
+    onOpenChange(false)
+    setIsDialogOpen(true)
+  }
 
   const handleCustomerComplete = async (customer) => {
-    const quotationItems = transformToQuotationItem(products);
+    const quotationItems = transformToQuotationItem(products)
     try {
-      await saveQuotation(quotationItems, customer);
+      await saveQuotation(quotationItems, customer)
       toast({
         title: "Quotation Created Successfully!",
         description: "We've received your request and will get back to you shortly",
-      });
+      })
       setProducts([])
-
     } catch (error) {
-      console.error("Error saving quotation", error)
       toast({
         title: error.message,
         variant: "destructive",
-      });
+      })
     }
-  };
+  }
 
-  const handleQuantityChange = (productId, delta) => {
+  const handleQuantityChange = (productObjId, delta) => {
     setProducts(prevProducts =>
       prevProducts.map(productObj => {
-        if (productObj.product.id === productId) {
-          const currentQuantity = productObj.quantity || 1;
-          const newQuantity = Math.max(1, currentQuantity + delta);
-          return { ...productObj, quantity: newQuantity };
+        if (productObj.id === productObjId) {
+          const currentQuantity = productObj.quantity || 1
+          const newQuantity = Math.max(1, currentQuantity + delta)
+          return { ...productObj, quantity: newQuantity }
         }
-        return productObj;
+        return productObj
       })
-    );
-  };
+    )
+  }
 
   const renderSelectionValue = (selection) => {
     switch (selection.pageType) {
       case "SELECTION":
         return <span className="text-sm font-medium text-foreground">{selection.userInput.title}</span>
-
       case "NUMBER":
         return (
           <div className="flex flex-wrap gap-2">
@@ -70,10 +66,8 @@ export function WindowSummaryDialog({ products, setProducts, open, onOpenChange,
             ))}
           </div>
         )
-
       case "TEXT":
         return <span className="text-sm font-medium">{selection.userInput.textValue || "No text provided"}</span>
-
       default:
         return <span className="text-sm font-medium">{JSON.stringify(selection.userInput)}</span>
     }
@@ -97,10 +91,10 @@ export function WindowSummaryDialog({ products, setProducts, open, onOpenChange,
 
           <div className="space-y-4">
             {products.map((productObj, productIndex) => {
-              const product = productObj.product;
-              const prodTypeSelection = productObj.userSelections[0]?.userInput;
+              const product = productObj.product
+              const prodTypeSelection = productObj.userSelections[0]?.userInput
               const img = prodTypeSelection && getPageItemImageUrl(prodTypeSelection.id, prodTypeSelection.image)
-              const quantity = productObj.quantity || 1;
+              const quantity = productObj.quantity || 1
 
               return <div key={productObj.id} className="space-y-3">
                 <div className="flex gap-3 items-start">
@@ -114,14 +108,13 @@ export function WindowSummaryDialog({ products, setProducts, open, onOpenChange,
                       {product.title}
                     </h3>
 
-                    {/* Quantity Controls */}
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-muted-foreground">Quantity:</span>
                       <div className="flex items-center border rounded-md">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleQuantityChange(product.id, -1)}
+                          onClick={() => handleQuantityChange(productObj.id, -1)}
                           disabled={quantity <= 1}
                           className="h-8 w-8 p-0 hover:bg-gray-400 rounded-md"
                         >
@@ -133,7 +126,7 @@ export function WindowSummaryDialog({ products, setProducts, open, onOpenChange,
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleQuantityChange(product.id, 1)}
+                          onClick={() => handleQuantityChange(productObj.id, 1)}
                           className="h-8 w-8 p-0 hover:bg-gray-400 rounded-md"
                         >
                           <Plus className="w-4 h-4" />
@@ -145,7 +138,7 @@ export function WindowSummaryDialog({ products, setProducts, open, onOpenChange,
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onDelete(product.id)}
+                      onClick={() => onDelete(productObj.id)}
                       className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
                     >
                       <Trash2 className="w-6 h-6 text-red-500" />
@@ -175,10 +168,7 @@ export function WindowSummaryDialog({ products, setProducts, open, onOpenChange,
             <Separator />
 
             <div className="flex gap-4">
-              <Button
-                onClick={handleSelectMoreProducts}
-                className="flex-1"
-              >
+              <Button onClick={handleSelectMoreProducts} className="flex-1">
                 <Plus className="w-4 h-4" />
                 Add More Products
               </Button>
@@ -192,7 +182,6 @@ export function WindowSummaryDialog({ products, setProducts, open, onOpenChange,
                 <Check className="w-4 h-4" />
                 Complete Selection
               </Button>
-
             </div>
           </div>
         </DialogContent>
