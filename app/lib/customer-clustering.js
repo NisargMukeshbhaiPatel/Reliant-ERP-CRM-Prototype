@@ -8,17 +8,17 @@ import { getAllProducts } from "./pb/products";
 // Calculate total order value including VAT
 function calculateOrderValue(quotation) {
   if (!quotation || !quotation.items) return 0;
-  
+
   return quotation.items.reduce((total, item) => {
     // Handle cases where price might be null or missing properties
     if (!item.price) return total;
-    
+
     const base = item.price.base || 0;
     const installation = item.price.installation || 0;
     const logistics = item.price.logistics || 0;
     const quantity = item.quantity || 1;
     const vat = item.price.vat || 0;
-    
+
     const basePrice = (base + installation + logistics) * quantity;
     const withVAT = base * vat;
     return total + basePrice + withVAT;
@@ -28,13 +28,13 @@ function calculateOrderValue(quotation) {
 // Determine primary product preference using dynamic product names
 function getProductPreference(quotation, products) {
   if (!quotation || !quotation.items || !products) return 'Other';
-  
+
   // Create a map of product titles to IDs for matching
   const productTitleMap = products.reduce((map, product) => {
     map[product.title] = product.id;
     return map;
   }, {});
-  
+
   const productCounts = quotation.items.reduce((counts, item) => {
     if (item.product && item.quantity) {
       // Normalize the product name to match against our product list
@@ -43,7 +43,7 @@ function getProductPreference(quotation, products) {
         counts[productTitle] = (counts[productTitle] || 0) + item.quantity;
       } else {
         // If exact match fails, try to find a partial match
-        const matchedProduct = products.find(p => 
+        const matchedProduct = products.find(p =>
           p.title.toLowerCase().includes(productTitle.toLowerCase()) ||
           productTitle.toLowerCase().includes(p.title.toLowerCase())
         );
@@ -60,7 +60,7 @@ function getProductPreference(quotation, products) {
   // Count products by type
   const productTypes = Object.keys(productCounts);
   const totalProductTypes = productTypes.filter(type => type !== 'Other').length;
-  
+
   if (totalProductTypes > 1) return 'Mixed';
   if (totalProductTypes === 1) return productTypes.find(type => type !== 'Other');
   return 'Other';
@@ -69,39 +69,39 @@ function getProductPreference(quotation, products) {
 // Calculate order complexity score
 function calculateComplexityScore(quotation) {
   if (!quotation || !quotation.items) return 0;
-  
+
   let score = 0;
-  
+
   // Base score for number of items
   score += quotation.items.length * 2;
-  
+
   // Score for total quantity
   const totalQuantity = quotation.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   score += totalQuantity;
-  
+
   // Score for customization options (more product details = more complex)
   quotation.items.forEach(item => {
     if (item.product_details && typeof item.product_details === 'object') {
       score += Object.keys(item.product_details).length;
     }
   });
-  
+
   return score;
 }
 
 // Extract geographic region from postcode
 function getGeographicRegion(postcode) {
   if (!postcode) return 'Unknown';
-  
+
   // Extract postcode area (first 1-2 letters)
   const area = postcode.match(/^[A-Z]{1,2}/)?.[0] || 'Unknown';
-  
+
   // Map common UK postcode areas to regions
   const regionMap = {
     'CR': 'South London',
     'TR': 'Cornwall',
     'B': 'Birmingham',
-    'M': 'Manchester', 
+    'M': 'Manchester',
     'L': 'Liverpool',
     'LS': 'Leeds',
     'S': 'Sheffield',
@@ -125,7 +125,7 @@ function getGeographicRegion(postcode) {
     'W': 'West London',
     'EC': 'East Central London'
   };
-  
+
   return regionMap[area] || `${area} Area`;
 }
 
@@ -151,8 +151,28 @@ export function clusterCustomers(quotations, products) {
     };
   }
 
-  // Process each quotation
-  const customerAnalysis = quotations.map((quotation, index) => {
+  const finalizedQuotations = quotations.filter(q => q.status === 'FINALIZED');
+
+  if (finalizedQuotations.length === 0) {
+    return {
+      clusters: {},
+      stats: {
+        totalCustomers: 0,
+        totalQuotations: 0,
+        averageOrderValue: 0,
+        totalRevenue: 0
+      },
+      chartData: {
+        valueDistribution: [],
+        productPreference: [],
+        complexityDistribution: [],
+        regionalDistribution: []
+      }
+    };
+  }
+
+  // Process each finalized quotation
+  const customerAnalysis = finalizedQuotations.map((quotation, index) => {
     try {
       const orderValue = calculateOrderValue(quotation);
       const productPreference = getProductPreference(quotation, products);
@@ -163,7 +183,7 @@ export function clusterCustomers(quotations, products) {
       const customer = quotation.customer || {};
       const firstName = customer.first_name || 'Unknown';
       const lastName = customer.last_name || 'Customer';
-      
+
       return {
         id: quotation.id || `unknown-${index}`,
         customerId: customer.id || `unknown-customer-${index}`,
@@ -215,7 +235,7 @@ export function clusterCustomers(quotations, products) {
     const key = pref.toLowerCase().replace(/\s+/g, '_');
     productPreferenceClusters[key] = [];
   });
-  
+
   const clusters = {
     byValue: {
       high: [],
@@ -279,9 +299,9 @@ export function clusterCustomers(quotations, products) {
       { name: 'Low Value', value: clusters.byValue.low.length, amount: clusters.byValue.low.reduce((sum, c) => sum + c.orderValue, 0) }
     ],
     productPreference: Object.entries(clusters.byProductPreference).map(([key, customers]) => {
-      const displayName = key === 'mixed' ? 'Mixed Products' : 
+      const displayName = key === 'mixed' ? 'Mixed Products' :
         key === 'other' ? 'Other Products' :
-        key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
       return {
         name: displayName,
         value: customers.length
@@ -311,7 +331,7 @@ export function clusterCustomers(quotations, products) {
  */
 export function getCustomerInsights(clusteringResult) {
   const { clusters, stats, chartData } = clusteringResult;
-  
+
   const insights = [];
 
   // Value insights
@@ -329,13 +349,13 @@ export function getCustomerInsights(clusteringResult) {
   // Product preference insights - find the most popular product type
   const productPrefs = Object.entries(clusters.byProductPreference)
     .filter(([key, customers]) => key !== 'mixed' && key !== 'other' && customers.length > 0)
-    .sort(([,a], [,b]) => b.length - a.length);
-  
+    .sort(([, a], [, b]) => b.length - a.length);
+
   if (productPrefs.length > 0) {
     const [topProductKey, topCustomers] = productPrefs[0];
     const topProductName = topProductKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     const secondPlace = productPrefs[1];
-    
+
     insights.push({
       type: 'product',
       title: `${topProductName}-Focused Market`,
@@ -345,10 +365,10 @@ export function getCustomerInsights(clusteringResult) {
   }
 
   // Regional insights
-  const topRegion = chartData.regionalDistribution.reduce((max, region) => 
+  const topRegion = chartData.regionalDistribution.reduce((max, region) =>
     region.value > max.value ? region : max, { value: 0 }
   );
-  
+
   if (topRegion.value > 0) {
     insights.push({
       type: 'geographic',
