@@ -31,7 +31,6 @@ export async function updateCustomer(customerId, customerData) {
   }
 }
 
-
 // TODO: check postcode
 export async function checkPostcode(postcode) {
   try {
