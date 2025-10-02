@@ -214,7 +214,7 @@ export function QuotationItemDialog({
                     AI Price Predictions
                   </h3>
                   <Button
-                    variant="default"
+                    variant="primary"
                     onClick={fetchAIPredictions}
                     disabled={loadingAI}
                     className="bg-transparent"
