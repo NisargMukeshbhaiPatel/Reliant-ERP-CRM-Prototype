@@ -298,7 +298,7 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
                     {quotation.pincode && (
                       <Badge
                         variant="outline"
-                        className="gap-1 justify-around p-0 border-2 px-2"
+                        className="gap-1 justify-around p-0 border-2 px-2 relative"
                       >
                         <MapPin className="h-5 w-5" />
                         {editingPincode === quotation.id ? (
@@ -352,8 +352,8 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
                           />
                         ) : (
                           <>
-                            <span className="text-xs font-medium uppercase">{quotation.pincode}</span>
-                            <div className="p-2 -mr-[11px] rounded-full bg-gray-400 cursor-pointer"
+                            <span className="text-xs font-medium uppercase pr-8 py-2">{quotation.pincode}</span>
+                            <div className="p-2 right-[2px] absolute rounded-full bg-gray-400 cursor-pointer"
                               onClick={() => setEditingPincode(quotation.id)}
                             >
                               <Pencil className="h-3 w-3" />

@@ -10,7 +10,7 @@ export default async function QuotationsPage() {
     quotations = await getAllQuotations()
   } catch (error) {
     console.error(error)
-    return "ERROR IN LOADING QUOTATIONS"
+    return "ERROR IN LOADING QUOTATIONS:" + error.message
   }
 
   return (

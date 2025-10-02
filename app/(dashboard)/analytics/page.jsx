@@ -14,7 +14,7 @@ export default async function AnalyticsPage() {
     console.error("Error loading data:", error);
     return (
       <div className="text-center py-12">
-        <h1 className="text-3xl font-bold text-red-600 mb-4">Error Loading Data</h1>
+        <h1 className="text-3xl font-bold text-red-600 mb-4">Error Loading Data: {error.message}</h1>
         <p className="text-gray-600">Unable to load quotation and product data for analytics</p>
       </div>
     );
@@ -23,7 +23,7 @@ export default async function AnalyticsPage() {
   // Process customer clustering with dynamic product names
   const clusteringResult = clusterCustomers(quotations, products);
   const insights = getCustomerInsights(clusteringResult);
-  
+
   return (
     <>
       <header className="mb-6">

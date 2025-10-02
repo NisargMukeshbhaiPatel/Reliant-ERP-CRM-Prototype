@@ -12,7 +12,7 @@ export default async function UsersPage() {
     ])
   } catch (error) {
     console.error(error)
-    return "ERROR IN LOADING USERS"
+    return "ERROR IN LOADING USERS:" + error.message
   }
 
   return (
