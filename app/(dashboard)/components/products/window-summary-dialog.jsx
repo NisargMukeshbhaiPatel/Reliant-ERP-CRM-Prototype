@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/dialog"
 import { getPageItemImageUrl, getProductImageUrl } from "@/constants/pb";
@@ -12,31 +12,53 @@ import CustomerDialog from "../customer-form/customer-dialog";
 import { transformToQuotationItem } from "@/lib/utils";
 import { saveQuotation } from "@/lib/pb/quotation";
 
-export function WindowSummaryDialog({ products, setProducts, open, onOpenChange, onDelete, handleSelectMoreProducts }) {
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+export function WindowSummaryDialog({
+  products,
+  setProducts,
+  open,
+  onOpenChange,
+  onDelete,
+  handleSelectMoreProducts,
+  isNewQuotation = false,
+  onCompleteSummary
+}) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleClick = () => {
-    if (!products || products.length === 0) return
-    onOpenChange(false)
-    setIsDialogOpen(true)
-  }
+  const handleClick = async () => {
+    console.log("Final Data", products);
+    if (!products || products.length === 0) return;
+
+    console.log(isNewQuotation, !!onCompleteSummary)
+    if (isNewQuotation && onCompleteSummary) {
+      setIsLoading(true)
+      await onCompleteSummary();
+      setIsLoading(false)
+      return;
+    }
+
+    console.log("DONT OME")
+    onOpenChange(false);
+    setIsDialogOpen(true);
+  };
 
   const handleCustomerComplete = async (customer) => {
-    const quotationItems = transformToQuotationItem(products)
+    const quotationItems = transformToQuotationItem(products);
     try {
-      await saveQuotation(quotationItems, customer)
+      await saveQuotation(quotationItems, customer);
       toast({
         title: "Quotation Created Successfully!",
         description: "We've received your request and will get back to you shortly",
-      })
-      setProducts([])
+      });
+      setProducts([]);
     } catch (error) {
+      console.error("Error saving quotation", error);
       toast({
         title: error.message,
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleQuantityChange = (productObjId, delta) => {
     setProducts(prevProducts =>
@@ -55,6 +77,7 @@ export function WindowSummaryDialog({ products, setProducts, open, onOpenChange,
     switch (selection.pageType) {
       case "SELECTION":
         return <span className="text-sm font-medium text-foreground">{selection.userInput.title}</span>
+
       case "NUMBER":
         return (
           <div className="flex flex-wrap gap-2">
@@ -66,8 +89,10 @@ export function WindowSummaryDialog({ products, setProducts, open, onOpenChange,
             ))}
           </div>
         )
+
       case "TEXT":
         return <span className="text-sm font-medium">{selection.userInput.textValue || "No text provided"}</span>
+
       default:
         return <span className="text-sm font-medium">{JSON.stringify(selection.userInput)}</span>
     }
@@ -108,6 +133,7 @@ export function WindowSummaryDialog({ products, setProducts, open, onOpenChange,
                       {product.title}
                     </h3>
 
+                    {/* Quantity Controls */}
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-muted-foreground">Quantity:</span>
                       <div className="flex items-center border rounded-md">
@@ -177,21 +203,25 @@ export function WindowSummaryDialog({ products, setProducts, open, onOpenChange,
                 variant="primary"
                 onClick={handleClick}
                 className="flex-1"
-                disabled={!products || products.length === 0}
+                disabled={isLoading || !products || products.length === 0}
               >
                 <Check className="w-4 h-4" />
-                Complete Selection
+                {isNewQuotation ? "Save Quotation" : "Complete Selection"}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
-      <CustomerDialog
-        product={products[0]?.product}
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        onComplete={handleCustomerComplete}
-      />
+
+      {/* Only show customer dialog if NOT a new quotation */}
+      {!isNewQuotation && (
+        <CustomerDialog
+          product={products[0]?.product}
+          isOpen={isDialogOpen}
+          onClose={() => setIsDialogOpen(false)}
+          onComplete={handleCustomerComplete}
+        />
+      )}
     </>
   )
 }

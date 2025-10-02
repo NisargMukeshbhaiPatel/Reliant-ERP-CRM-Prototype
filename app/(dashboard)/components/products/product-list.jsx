@@ -1,5 +1,6 @@
 "use client"
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/ui/components/button";
 import { ShoppingCart, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -9,8 +10,15 @@ import { NumberInputDialog } from "./number-input-dialog";
 import { SelectionDialog } from "./selection-dialog";
 import { WindowSummaryDialog } from "./window-summary-dialog";
 import { ProductGrid } from "./product-grid";
+import CustomerDialog from "../customer-form/customer-dialog";
+import { transformToQuotationItem } from "@/lib/utils";
+import { saveQuotation } from "@/lib/pb/quotation";
 
 export default function ProductList({ products }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const isNewQuotation = searchParams.get("mode") === "new-quotation";
+
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [currentPageData, setCurrentPageData] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -24,7 +32,38 @@ export default function ProductList({ products }) {
   const [configuredProducts, setConfiguredProducts] = useState([]);
   const [showSummary, setShowSummary] = useState(false);
 
+  // Customer information state
+  const [customerInfo, setCustomerInfo] = useState(null);
+  const [showCustomerDialog, setShowCustomerDialog] = useState(false);
+
+  // Show customer dialog on mount if it's a new quotation
+  useEffect(() => {
+    if (isNewQuotation && !customerInfo) {
+      setShowCustomerDialog(true);
+    }
+  }, [isNewQuotation, customerInfo]);
+
+  const handleCustomerComplete = (customer) => {
+    setCustomerInfo(customer);
+    setShowCustomerDialog(false);
+    toast({
+      title: "Customer information saved. Select Products",
+      description: "Start adding products to the quotation",
+    });
+  };
+
   const handleProductClick = async (product) => {
+    // If it's a new quotation and no customer info, show customer dialog first
+    if (isNewQuotation && !customerInfo) {
+      setShowCustomerDialog(true);
+      toast({
+        title: "Customer information required",
+        description: "Please provide customer information before selecting products",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoadingProductId(product.id);
     try {
       const pageData = await getProdPageById(product.page);
@@ -74,7 +113,6 @@ export default function ProductList({ products }) {
     currentBranch.completedSteps.push(stepData);
 
     if (currentPageData.type === "SELECTION") {
-      // Check if selected item has next_pages
       if (userSelection.next_pages && userSelection.next_pages.length > 0) {
         console.log("Selected item has next_pages:", userSelection.next_pages);
 
@@ -85,23 +123,19 @@ export default function ProductList({ products }) {
         };
         updatedFlowStack.push(newBranch);
 
-        // Add current page's next_pages to current branch (for after selection branch completes)
         if (currentPageData.next_pages && currentPageData.next_pages.length > 0) {
           console.log("Also queuing current page's next_pages:", currentPageData.next_pages);
           currentBranch.pages.push(...currentPageData.next_pages);
         }
 
         setFlowStack(updatedFlowStack);
-
         await loadPageById(userSelection.next_pages[0]);
         return;
       } else if (currentPageData.next_pages && currentPageData.next_pages.length > 0) {
-        // Selected item has no next_pages, but current page does
         console.log("Adding current page's next_pages:", currentPageData.next_pages);
         currentBranch.pages.push(...currentPageData.next_pages);
       }
     } else if (currentPageData.type === "NUMBER" || currentPageData.type === "TEXT") {
-      // For number/text pages, add page's next_pages
       if (currentPageData.next_pages && currentPageData.next_pages.length > 0) {
         console.log("Adding page's next_pages:", currentPageData.next_pages);
         currentBranch.pages.push(...currentPageData.next_pages);
@@ -139,9 +173,8 @@ export default function ProductList({ products }) {
       await completeFlow();
       return;
     }
-    // Check if current branch has more pages
+
     if (currentBranch.currentIndex < currentBranch.pages.length - 1) {
-      // Move to next page in current branch
       const nextIndex = currentBranch.currentIndex + 1;
       const nextPageId = currentBranch.pages[nextIndex];
 
@@ -156,10 +189,8 @@ export default function ProductList({ products }) {
       setFlowStack(updatedFlowStack);
       await loadPageById(nextPageId);
     } else {
-      // Current branch is complete
       console.log("Branch complete");
 
-      // Check if this is the last branch
       if (currentStack.length === 1) {
         console.log("Last branch complete, finishing flow");
         await completeFlow();
@@ -179,31 +210,25 @@ export default function ProductList({ products }) {
     console.log("Completed branch:", completedBranch);
     console.log("Remaining stack:", remainingStack);
 
-    // Add completed branch data to overall flow data
     setAllFlowData(prev => [...prev, ...completedBranch.completedSteps]);
 
     if (remainingStack.length === 0) {
-      // No more branches, flow is complete
       console.log("No more branches, completing flow");
       await completeFlow();
       return;
     }
 
-    // Update stack first
     setFlowStack(remainingStack);
 
     const parentBranch = remainingStack[remainingStack.length - 1];
     console.log("Parent branch after backtrack:", parentBranch);
 
-    // Move to next page in parent branch, passing the updated stack
     await moveToNextPage(remainingStack);
   };
 
   const completeFlow = async () => {
-    // Collect all remaining data
     const finalData = [...allFlowData];
 
-    // Add any remaining branch data
     flowStack.forEach(branch => {
       finalData.push(...branch.completedSteps);
     });
@@ -211,26 +236,23 @@ export default function ProductList({ products }) {
     console.log("Flow completed!");
     console.log("Final flow data:", finalData);
 
-    // Create configured product object
     const configuredProduct = {
-      id: crypto.randomUUID(), // Generate unique ID
+      id: crypto.randomUUID(),
       product: selectedProduct,
       userSelections: finalData,
       quantity: 1
     };
 
-    // Add to configured products list
     setConfiguredProducts(prev => [...prev, configuredProduct]);
-
-    // Close current dialog and show summary
     handleDialogClose();
     setShowSummary(true);
   };
 
-  const handleDeleteProduct = (productObjId) => {
-    setConfiguredProducts(prev => prev.filter(p => p.id !== productObjId));
+  const handleDeleteProduct = (productId) => {
+    setConfiguredProducts(prev => prev.filter(p => p.id !== productId));
     toast({
       title: "Product removed",
+      variant: "success"
     });
   };
 
@@ -250,17 +272,37 @@ export default function ProductList({ products }) {
     setShowSummary(true);
   };
 
+  const handleCompleteSummary = async () => {
+    // If it's a new quotation, customer info already exists, so save directly
+    if (isNewQuotation && customerInfo) {
+      const quotationItems = transformToQuotationItem(configuredProducts);
+      try {
+        await saveQuotation(quotationItems, customerInfo);
+        toast({
+          title: "Quotation Created Successfully!",
+          description: "We've received your request and will get back to you shortly",
+        });
+
+        router.push("/quotations");
+      } catch (error) {
+        console.error("Error saving quotation", error);
+        toast({
+          title: error.message,
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const handlePrevious = async () => {
     const currentBranch = flowStack[flowStack.length - 1];
 
     if (!currentBranch) return;
 
     if (currentBranch.currentIndex > 0) {
-      // Go back within current branch
       const prevIndex = currentBranch.currentIndex - 1;
       const prevPageId = currentBranch.pages[prevIndex];
 
-      // Remove last completed step from current branch
       const updatedFlowStack = [...flowStack];
       updatedFlowStack[updatedFlowStack.length - 1].completedSteps.pop();
       updatedFlowStack[updatedFlowStack.length - 1].currentIndex = prevIndex;
@@ -268,16 +310,13 @@ export default function ProductList({ products }) {
 
       await loadPageById(prevPageId);
     } else if (flowStack.length > 1) {
-      // Go back to parent branch
       const parentStack = flowStack.slice(0, -1);
       const parentBranch = parentStack[parentStack.length - 1];
 
-      // Remove last step from parent branch
       parentBranch.completedSteps.pop();
 
       setFlowStack(parentStack);
 
-      // Load parent's current page
       const parentPageId = parentBranch.pages[parentBranch.currentIndex];
       await loadPageById(parentPageId);
     }
@@ -304,7 +343,6 @@ export default function ProductList({ products }) {
     <div>
       {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-7 gap-4">
-        {/* Logo and Title section */}
         <div className="flex items-center gap-4">
           <img
             src="https://reliant-windows.co.uk/wp-content/uploads/2024/12/Reliant_Windows_Logo-2.webp"
@@ -312,11 +350,17 @@ export default function ProductList({ products }) {
             className="h-16 w-auto object-contain"
           />
           <div className="text-left">
-            <h1 className="text-2xl md:text-4xl font-bold text-gray-800">Our Products</h1>
+            <h1 className="text-2xl md:text-4xl font-bold text-gray-800">
+              {isNewQuotation ? "New Quotation" : "Our Products"}
+            </h1>
+            {isNewQuotation && customerInfo && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Customer: {customerInfo.name}
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Cart Button */}
         <div className="flex justify-center sm:justify-end">
           <Button
             variant="outline"
@@ -412,7 +456,7 @@ export default function ProductList({ products }) {
                 onClick={() => {
                   const textInput = document.getElementById('textInput');
                   const textValue = textInput ? textInput.value : '';
-                  handleSubmit({ value: textValue });
+                  handleSubmit({ textValue });
                 }}
                 className="flex-1"
                 disabled={isLoadingNextPage}
@@ -431,6 +475,14 @@ export default function ProductList({ products }) {
         </div>
       )}
 
+      {/* Customer Dialog - for initial customer info */}
+      <CustomerDialog
+        isOpen={showCustomerDialog}
+        onClose={() => setShowCustomerDialog(false)}
+        onComplete={handleCustomerComplete}
+        isCollectingOnly={isNewQuotation}
+      />
+
       {/* Window Summary Dialog */}
       <WindowSummaryDialog
         products={configuredProducts}
@@ -439,8 +491,9 @@ export default function ProductList({ products }) {
         onOpenChange={setShowSummary}
         onDelete={handleDeleteProduct}
         handleSelectMoreProducts={handleSelectMoreProducts}
+        isNewQuotation={isNewQuotation}
+        onCompleteSummary={handleCompleteSummary}
       />
     </div>
   );
 }
-

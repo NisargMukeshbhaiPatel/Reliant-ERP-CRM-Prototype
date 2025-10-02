@@ -12,14 +12,14 @@ import {
 import { Button } from "@/ui/components/button";
 import { Input } from "@/ui/components/input";
 import { toast } from "@/hooks/use-toast";
-import { checkPostcode } from "@/lib/pb/customer";
 import { getProductImageUrl } from "@/constants/pb";
 
 export default function CustomerDialog({
   product,
   isOpen,
   onClose,
-  onComplete
+  onComplete,
+  isCollectingOnly = false
 }) {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -47,19 +47,54 @@ export default function CustomerDialog({
       return;
     }
 
-    setIsLoading(true)
-    await onComplete(formData);
-    setIsLoading(false)
-    onClose();
+    // If we're just collecting info (new quotation flow), don't await
+    if (isCollectingOnly) {
+      onComplete(formData);
+      onClose();
+      // Reset form for next time
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        postcode: ''
+      });
+    } else {
+      // Original flow - await the save operation
+      setIsLoading(true);
+      try {
+        await onComplete(formData);
+        onClose();
+        // Reset form
+        setFormData({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          postcode: ''
+        });
+      } catch (error) {
+        console.error("Error in customer dialog:", error);
+        toast({
+          title: "Error saving information",
+          description: error.message,
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   const imageUrl = product?.image ? getProductImageUrl(product.collectionId, product.id, product.image) : null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden">
+      <DialogContent
+        className={`max-h-[95vh] p-0 overflow-hidden ${imageUrl ? "max-w-[95vw]" : "w-[55vw] max-w-[500px]"}`}
+      >
         <div className="flex flex-col md:flex-row h-full max-h-[95vh]">
-          {/* Image Section */}
+          {/* Image Section - only show if product provided */}
           {imageUrl && (
             <div className="w-full md:w-2/5 flex-shrink-0">
               <div className="relative h-full w-full">
@@ -77,7 +112,14 @@ export default function CustomerDialog({
           <div className="flex-1 flex flex-col p-6 justify-center">
             <div className="flex flex-col max-h-full">
               <DialogHeader className="flex-shrink-0 mb-4">
-                <DialogTitle className="text-xl">Your Details</DialogTitle>
+                <DialogTitle className="text-xl">
+                  {isCollectingOnly ? "Customer Information" : "Your Details"}
+                </DialogTitle>
+                {isCollectingOnly && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Please provide customer information to start the quotation
+                  </p>
+                )}
               </DialogHeader>
 
               <div className="flex-1 overflow-y-auto min-h-0">
@@ -137,6 +179,7 @@ export default function CustomerDialog({
                       required
                     />
                   </div>
+
                   <div className="space-y-2">
                     <label htmlFor="postcode" className="block text-sm font-semibold text-gray-600">
                       Postcode
@@ -146,12 +189,9 @@ export default function CustomerDialog({
                       placeholder="SW1A 1AA"
                       value={formData.postcode}
                       onChange={(e) => {
-                        const value = e.target.value;
+                        const value = e.target.value?.trim() || "";
                         handleInputChange('postcode', value);
-                      }}
-                      onBlur={(e) => {
                         const postcodeRegex = /^[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}$/i;
-                        const value = e.target.value.trim();
                         if (value && !postcodeRegex.test(value)) {
                           setPostcodeStatus('invalid');
                         } else {
@@ -191,7 +231,7 @@ export default function CustomerDialog({
                   ) : (
                     <>
                       <Check className="w-4 h-4" />
-                      Complete Selection
+                      {isCollectingOnly ? "Continue" : "Complete Selection"}
                     </>
                   )}
                 </Button>
