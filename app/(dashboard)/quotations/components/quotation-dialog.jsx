@@ -15,7 +15,7 @@ import { Loader2, Sparkles } from "lucide-react"
 import { ScrollArea } from "@/components/scroll-area"
 import { formatDate } from "@/lib/utils"
 import { QuotationItemDialog } from "./quotation-item-dialog"
-import { updateQuotationPriceStatus } from "@/lib/pb/quotation"
+import { updateQuotationPriceStatus, updateQuotationPin } from "@/lib/pb/quotation"
 import { updateCustomer } from "@/lib/pb/customer"
 
 // Helper function to get status badge properties
@@ -38,6 +38,7 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
   const [aiSummary, setAiSummary] = useState("")
   const [loadingSummary, setLoadingSummary] = useState(false)
   const [priceStatus, setPriceStatus] = useState("REVIEW")
+  const [editingPincode, setEditingPincode] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false)
 
   const [selectedItem, setSelectedItem] = useState(null)
@@ -295,9 +296,70 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
 
                   <div className="flex flex-col gap-2">
                     {quotation.pincode && (
-                      <Badge variant="outline" className="py-1 border-2 justify-start gap-1">
-                        <MapPin className="h-5 w-5 text-gray-600" />
-                        <span className="text-sm font-medium">{quotation.pincode}</span>
+                      <Badge
+                        variant="outline"
+                        className="gap-1 justify-around p-0 border-2 px-2"
+                      >
+                        <MapPin className="h-5 w-5" />
+                        {editingPincode === quotation.id ? (
+                          <input
+                            type="text"
+                            defaultValue={quotation.pincode}
+                            autoFocus
+                            onBlur={async (e) => {
+                              const newPincode = e.target.value.trim();
+                              if (newPincode && newPincode !== quotation.pincode) {
+                                const postcodeRegex = /^[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}$/i;
+
+                                if (!postcodeRegex.test(newPincode)) {
+                                  toast({
+                                    title: "Invalid postcode format",
+                                    description: "Please enter a valid UK postcode (e.g., SW1A 1AA)",
+                                    variant: "destructive"
+                                  });
+                                  setEditingPincode(null);
+                                  return;
+                                }
+
+                                try {
+                                  await updateQuotationPin(quotation.id, newPincode);
+                                  toast({
+                                    title: "Pincode updated successfully"
+                                  });
+                                  quotation.pincode = newPincode;
+                                  router.refresh();
+                                  setEditingPincode(null);
+                                } catch (error) {
+                                  toast({
+                                    title: error.message || "Failed to update pincode",
+                                    variant: "destructive"
+                                  });
+                                }
+                              } else {
+                                setEditingPincode(null);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.target.blur();
+                              }
+                              if (e.key === 'Escape') {
+                                setEditingPincode(null);
+                              }
+                            }}
+                            className="py-2 bg-transparent border-none outline-none w-[5rem] text-xs font-medium uppercase focus:ring-1 focus:ring-primary rounded px-1"
+                            maxLength="10"
+                          />
+                        ) : (
+                          <>
+                            <span className="text-xs font-medium uppercase">{quotation.pincode}</span>
+                            <div className="p-2 -mr-[11px] rounded-full bg-gray-400 cursor-pointer"
+                              onClick={() => setEditingPincode(quotation.id)}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </div>
+                          </>
+                        )}
                       </Badge>
                     )}
                     <Badge variant="outline" className="border-2 py-1 justify-start gap-2">
@@ -399,14 +461,15 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
               </Card>
             </div>
           </ScrollArea>
-        </DialogContent>
-      </Dialog>
+        </DialogContent >
+      </Dialog >
 
       {/* Customer Edit Dialog */}
-      <Dialog open={editCustomerOpen} onOpenChange={(open) => {
+      < Dialog open={editCustomerOpen} onOpenChange={(open) => {
         setEditCustomerOpen(open)
         if (!open) onOpenChange(true)
-      }}>
+      }
+      }>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Customer</DialogTitle>
@@ -475,7 +538,7 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
             </div>
           </form>
         </DialogContent>
-      </Dialog>
+      </Dialog >
 
       <QuotationItemDialog
         item={selectedItem}

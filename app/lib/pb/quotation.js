@@ -207,3 +207,17 @@ export async function updateQuotationPriceStatus(quotationPriceId, status) {
   }
 }
 
+export async function updateQuotationPin(quotationId, newPincode) {
+  if (!await isManager()) {
+    throw new Error("Unauthorized: Only managers");
+  }
+  try {
+    const updated = await pb.collection('quotations').update(quotationId, {
+      pincode: newPincode
+    });
+    return updated;
+  } catch (error) {
+    console.error('Error updating pincode:', error);
+    throw error;
+  }
+}
