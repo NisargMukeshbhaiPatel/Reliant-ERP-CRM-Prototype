@@ -151,12 +151,15 @@ export function QuotationItemDialog({
             Go Back
           </Button>
           <DialogTitle className="text-xl pt-2">Edit Quotation Item</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="sr-only">
+            {item.product}
+          </DialogDescription>
+          <div>
             <Badge variant="secondary" className="mr-2">
               {item.product}
             </Badge>
             Quantity: {item.quantity}
-          </DialogDescription>
+          </div>
         </DialogHeader>
 
         <ScrollArea className="h-[calc(95vh-200px)] px-3">
