@@ -1,8 +1,8 @@
 # Reliant-ERP-CRM-Prototype
-**The application is already deployed on the cloud and can be accessed through the provided URL. By default, you will land on the customer-facing interface used for submitting enquiries.
-To switch to the CRM (management) side, click the Login button located on the left-hand side of the page and sign in with the following credentials:
-Email: manager@example.com
-Password: 12345678 **
+The application is already deployed on the cloud and can be accessed through the provided URL. By default, you will land on the customer-facing interface used for submitting enquiries.
+To switch to the CRM (management) side, click the Login button located on the left-hand side of the page and sign in with the following credentials: <br>
+Email: manager@example.com <br>
+Password: 12345678 
 
 **https://reliant-crm.netlify.app**
 
