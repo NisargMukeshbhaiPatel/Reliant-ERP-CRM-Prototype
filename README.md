@@ -30,6 +30,31 @@ npm run dev
 **Visit: http://localhost:3000** in your browser <br>
 Keep the terminal window open while using the app (it shows logs)
 
+
+## 🛠️ If npm (Node.js) is not installed on your system
+Check if npm is installed <br>
+Open a terminal (PowerShell on Windows, Terminal on macOS/Linux) and type: 
+```bash
+npm -v
+```
+If you see a version number (e.g., 9.0.0), npm is already installed. <br> 
+If you see an error like “command not found”, then npm is not installed. <br> 
+Install Node.js (includes npm)
+Go to: https://nodejs.org/ <br> 
+Download the LTS (Long Term Support) version (currently Node.js 18+). <br>
+Run the installer (next → next → finish).<br> 
+👉 This automatically installs Node.js and npm together.
+Verify installation
+After installing, reopen your terminal and run:
+```bash
+node -v
+```
+```bash
+npm -v
+```
+You should now see version numbers for both. <br>
+
+
 ## 🤖 AI Components
 The system integrates AI at multiple stages to improve efficiency and reliability:<br>
 **Quotation Predictor (Scikit-learn + FastAPI)** <br>
