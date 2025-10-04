@@ -315,10 +315,20 @@ export function clusterCustomers(quotations, products) {
 
   // Calculate statistics
   const totalOrderValue = customerAnalysis.reduce((sum, c) => sum + (c.orderValue || 0), 0);
-  const validCustomers = customerAnalysis.filter(c => c.customerId && c.customerId !== 'unknown');
+
+  // Calculate total quotations from all statuses
   const totalQuotations = statusCounts.DRAFT + statusCounts.REVIEW + statusCounts.FINALIZED + statusCounts.CANCELLED;
+
+  // Calculate total unique customers from ALL quotations (not just finalized)
+  const allCustomerIds = new Set();
+  quotations.forEach(q => {
+    if (q.customer && q.customer.id) {
+      allCustomerIds.add(q.customer.id);
+    }
+  });
+
   const stats = {
-    totalCustomers: new Set(customerAnalysis.map(c => c.customerId)).size,
+    totalCustomers: allCustomerIds.size,
     totalQuotations: totalQuotations,
     averageOrderValue: customerAnalysis.length > 0 ? totalOrderValue / customerAnalysis.length : 0,
     totalRevenue: totalOrderValue,
