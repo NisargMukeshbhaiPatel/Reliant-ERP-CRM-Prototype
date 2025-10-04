@@ -4,6 +4,15 @@ import { AnalyticsChart } from "./components/analytics-chart";
 import { getCustomerInsights, clusterCustomers } from "@/lib/customer-clustering";
 import { getAllProducts } from "@/lib/pb/products";
 
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+};
+
 export default async function AnalyticsPage() {
   let quotations, products;
 
@@ -22,6 +31,7 @@ export default async function AnalyticsPage() {
 
   // Process customer clustering with dynamic product names
   const clusteringResult = clusterCustomers(quotations, products);
+  console.log(clusteringResult.stats)
   const insights = getCustomerInsights(clusteringResult);
 
   return (
@@ -42,11 +52,15 @@ export default async function AnalyticsPage() {
           </div>
           <div className="bg-white p-4 rounded-lg border shadow-sm">
             <h3 className="text-sm font-medium text-gray-500">Avg Order Value</h3>
-            <p className="text-2xl font-bold text-purple-600">£{clusteringResult.stats.averageOrderValue.toFixed(0)}</p>
+            <p className="text-2xl font-bold text-purple-600">
+              {formatCurrency(clusteringResult.stats.averageOrderValue)}
+            </p>
           </div>
           <div className="bg-white p-4 rounded-lg border shadow-sm">
             <h3 className="text-sm font-medium text-gray-500">Total Revenue</h3>
-            <p className="text-2xl font-bold text-orange-600">£{clusteringResult.stats.totalRevenue.toFixed(0)}</p>
+            <p className="text-2xl font-bold text-orange-600">
+              {formatCurrency(clusteringResult.stats.totalRevenue)}
+            </p>
           </div>
         </div>
       </header>
