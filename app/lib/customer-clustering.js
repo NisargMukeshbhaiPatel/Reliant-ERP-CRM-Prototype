@@ -3,8 +3,6 @@
  * Analyzes quotation data to segment customers into meaningful groups
  */
 
-import { getAllProducts } from "./pb/products";
-
 // Calculate total order value including VAT
 function calculateOrderValue(quotation) {
   if (!quotation || !quotation.items) return 0;
@@ -129,6 +127,29 @@ function getGeographicRegion(postcode) {
   return regionMap[area] || `${area} Area`;
 }
 
+function countQuotationsByStatus(quotations) {
+  const statusCounts = {
+    FINALIZED: 0,
+    REVIEW: 0,
+    CANCELLED: 0
+  };
+
+  if (!quotations || quotations.length === 0) {
+    return statusCounts;
+  }
+
+  quotations.forEach(quotation => {
+    const status = quotation?.status;
+
+    // Only count if status is not null and matches one of our target statuses
+    if (status && statusCounts.hasOwnProperty(status)) {
+      statusCounts[status]++;
+    }
+  });
+
+  return statusCounts;
+}
+
 /**
  * Main clustering function
  */
@@ -140,7 +161,12 @@ export function clusterCustomers(quotations, products) {
         totalCustomers: 0,
         totalQuotations: 0,
         averageOrderValue: 0,
-        totalRevenue: 0
+        totalRevenue: 0,
+        statusCounts: {
+          FINALIZED: 0,
+          REVIEW: 0,
+          CANCELLED: 0
+        }
       },
       chartData: {
         valueDistribution: [],
@@ -151,6 +177,9 @@ export function clusterCustomers(quotations, products) {
     };
   }
 
+  // Count quotations by status
+  const statusCounts = countQuotationsByStatus(quotations);
+
   const finalizedQuotations = quotations.filter(q => q.status === 'FINALIZED');
 
   if (finalizedQuotations.length === 0) {
@@ -160,7 +189,8 @@ export function clusterCustomers(quotations, products) {
         totalCustomers: 0,
         totalQuotations: 0,
         averageOrderValue: 0,
-        totalRevenue: 0
+        totalRevenue: 0,
+        statusCounts
       },
       chartData: {
         valueDistribution: [],
@@ -284,11 +314,13 @@ export function clusterCustomers(quotations, products) {
   // Calculate statistics
   const totalOrderValue = customerAnalysis.reduce((sum, c) => sum + (c.orderValue || 0), 0);
   const validCustomers = customerAnalysis.filter(c => c.customerId && c.customerId !== 'unknown');
+  const totalQuotations = statusCounts.DRAFT + statusCounts.REVIEW + statusCounts.FINALIZED + statusCounts.CANCELLED;
   const stats = {
     totalCustomers: new Set(customerAnalysis.map(c => c.customerId)).size,
-    totalQuotations: customerAnalysis.length,
+    totalQuotations: totalQuotations,
     averageOrderValue: customerAnalysis.length > 0 ? totalOrderValue / customerAnalysis.length : 0,
-    totalRevenue: totalOrderValue
+    totalRevenue: totalOrderValue,
+    statusCounts
   };
 
   // Prepare chart data

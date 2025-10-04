@@ -40,7 +40,7 @@ export default async function AnalyticsPage() {
         <h1 className="text-3xl font-bold">Customer Analytics</h1>
         <p className="text-gray-600 mt-2">Customer segmentation and insights based on quotation data</p>
 
-        {/* Key Stats Summary */}
+        {/* Key Stats Summary - First Row */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
           <div className="bg-white p-4 rounded-lg border shadow-sm">
             <h3 className="text-sm font-medium text-gray-500">Total Customers</h3>
@@ -60,6 +60,27 @@ export default async function AnalyticsPage() {
             <h3 className="text-sm font-medium text-gray-500">Total Revenue</h3>
             <p className="text-2xl font-bold text-orange-600">
               {formatCurrency(clusteringResult.stats.totalRevenue)}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="bg-white p-4 rounded-lg border shadow-sm">
+            <h3 className="text-sm font-medium text-gray-500">Finalized Quotations</h3>
+            <p className="text-2xl font-bold text-emerald-600">
+              {clusteringResult.stats.statusCounts.FINALIZED}
+            </p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border shadow-sm">
+            <h3 className="text-sm font-medium text-gray-500">In Review</h3>
+            <p className="text-2xl font-bold text-amber-600">
+              {clusteringResult.stats.statusCounts.REVIEW}
+            </p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border shadow-sm">
+            <h3 className="text-sm font-medium text-gray-500">Cancelled Quotations</h3>
+            <p className="text-2xl font-bold text-red-600">
+              {clusteringResult.stats.statusCounts.CANCELLED}
             </p>
           </div>
         </div>
