@@ -131,7 +131,8 @@ function countQuotationsByStatus(quotations) {
   const statusCounts = {
     FINALIZED: 0,
     REVIEW: 0,
-    CANCELLED: 0
+    CANCELLED: 0,
+    DRAFT: 0  // add Draft for null status
   };
 
   if (!quotations || quotations.length === 0) {
@@ -141,8 +142,9 @@ function countQuotationsByStatus(quotations) {
   quotations.forEach(quotation => {
     const status = quotation?.status;
 
-    // Only count if status is not null and matches one of our target statuses
-    if (status && statusCounts.hasOwnProperty(status)) {
+    if (!status) {
+      statusCounts.DRAFT++;
+    } else if (statusCounts.hasOwnProperty(status)) {
       statusCounts[status]++;
     }
   });

@@ -64,17 +64,24 @@ export default async function AnalyticsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        {/* Quotation Status Cards - Second Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
           <div className="bg-white p-4 rounded-lg border shadow-sm">
-            <h3 className="text-sm font-medium text-gray-500">Finalized Quotations</h3>
-            <p className="text-2xl font-bold text-emerald-600">
-              {clusteringResult.stats.statusCounts.FINALIZED}
+            <h3 className="text-sm font-medium text-gray-500">Draft Quotations</h3>
+            <p className="text-2xl font-bold text-gray-600">
+              {clusteringResult.stats.statusCounts.DRAFT}
             </p>
           </div>
           <div className="bg-white p-4 rounded-lg border shadow-sm">
             <h3 className="text-sm font-medium text-gray-500">In Review</h3>
             <p className="text-2xl font-bold text-amber-600">
               {clusteringResult.stats.statusCounts.REVIEW}
+            </p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border shadow-sm">
+            <h3 className="text-sm font-medium text-gray-500">Finalized Quotations</h3>
+            <p className="text-2xl font-bold text-emerald-600">
+              {clusteringResult.stats.statusCounts.FINALIZED}
             </p>
           </div>
           <div className="bg-white p-4 rounded-lg border shadow-sm">
