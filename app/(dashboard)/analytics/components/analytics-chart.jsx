@@ -11,6 +11,7 @@ import {
   Users,
   DollarSign
 } from "lucide-react";
+import { Button } from "@/components/button";
 
 // Simple Bar Chart Component
 function BarChart({ data, colors, title }) {
@@ -401,7 +402,7 @@ function ModelClustersTab() {
     const sortedPrices = [...prices].sort((a, b) => a - b);
     const p33 = sortedPrices[Math.floor(sortedPrices.length * 0.15)] || sortedPrices[0];
     const p66 = sortedPrices[Math.floor(sortedPrices.length * 0.66)] || sortedPrices[sortedPrices.length - 1];
-    
+
     const meanQty = qtys.reduce((a, b) => a + b, 0) / qtys.length || 0;
 
     const tierForPrice = (v) => {
@@ -520,12 +521,13 @@ function ModelClustersTab() {
                     <div className="text-xs text-gray-500">Range £{s.minPrice} - £{s.maxPrice}</div>
                   </div>
                   <div className="mt-3">
-                    <button
+                    <Button
                       onClick={() => setSelectedCluster(s.id)}
-                      className={`px-3 py-1 rounded-md text-sm ${selectedCluster === s.id ? 'bg-blue-600 text-white' : 'bg-white border'}`}
+                      {...(selectedCluster === s.id && { variant: "primary" })}
+                      size="sm"
                     >
                       Filter
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -616,10 +618,10 @@ function ModelClustersTab() {
               </div>
 
               {/* Clustered customers table */}
-              <div className="col-span-1 bg-white p-4 rounded-lg border overflow-auto">
+              <div className="col-span-1 bg-white p-4 rounded-lg border">
                 <h4 className="font-medium text-gray-900 mb-3">Customers</h4>
-                <div className="text-sm text-gray-600 mb-2">{selectedCluster === null ? 'All clusters' : `Cluster ${selectedCluster}`}</div>
-                <div className="space-y-2">
+                <div className="text-sm text-gray-600 mb-2">{selectedCluster === null ? 'All clusters' : `Cluster ${selectedCluster + 1}`}</div>
+                <div className="space-y-2 pb-4 overflow-auto max-h-[650px]">
                   {(data.clusters || []).filter(c => selectedCluster === null ? true : c.cluster === selectedCluster).slice(0, 50).map((c, idx) => (
                     <div key={idx} className="p-2 rounded-md border hover:bg-gray-50">
                       <div className="flex justify-between items-start">
@@ -636,6 +638,7 @@ function ModelClustersTab() {
                   ))}
                 </div>
               </div>
+
             </div>
           </div>
         )}
