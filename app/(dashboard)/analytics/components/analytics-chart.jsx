@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   BarChart3,
   TrendingUp,
@@ -323,7 +323,8 @@ export function AnalyticsChart({ clusteringData, insights }) {
     { id: "value", label: "Customer Value", icon: TrendingUp },
     { id: "products", label: "Product Preferences", icon: Package },
     { id: "geography", label: "Geographic Distribution", icon: MapPin },
-    { id: "insights", label: "Insights & Complexity", icon: Lightbulb }
+    { id: "insights", label: "Insights & Complexity", icon: Lightbulb },
+    { id: "ml", label: "ML Clusters", icon: Users }
   ];
 
   return (
@@ -357,6 +358,287 @@ export function AnalyticsChart({ clusteringData, insights }) {
         {activeTab === "products" && <ProductPreferenceTab data={chartData.productPreference} clusters={clusters.byProductPreference} />}
         {activeTab === "geography" && <GeographyTab data={chartData.regionalDistribution} clusters={clusters.byRegion} />}
         {activeTab === "insights" && <InsightsAndComplexityTab insights={insights} complexityData={chartData.complexityDistribution} complexityClusters={clusters.byComplexity} />}
+        {activeTab === "ml" && <ModelClustersTab />}
+      </div>
+    </div>
+  );
+}
+
+// ML Clusters Tab - client-side fetch to external model API
+function ModelClustersTab() {
+  const [state, setState] = useState({ loading: false, error: null, data: null });
+
+  useEffect(() => {
+    let mounted = true;
+    setState({ loading: true, error: null, data: null });
+
+    fetch('/api/ai/cluster')
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (mounted) setState({ loading: false, error: null, data: json });
+      })
+      .catch((err) => {
+        if (mounted) setState({ loading: false, error: err.message || String(err), data: null });
+      });
+
+    return () => { mounted = false; };
+  }, []);
+
+  const { loading, error, data } = state;
+
+  // Helpers
+  const safeNumber = (v) => (typeof v === 'number' ? v : 0);
+
+  // Derived data helpers
+  const getSummaryByCluster = (summary = []) => {
+    if (!summary || summary.length === 0) return [];
+
+    // compute global stats to create relative labels
+    const prices = summary.map(s => safeNumber(s.total_price_mean));
+    const qtys = summary.map(s => safeNumber(s.total_qty_mean));
+
+    const sortedPrices = [...prices].sort((a, b) => a - b);
+    const p33 = sortedPrices[Math.floor(sortedPrices.length * 0.15)] || sortedPrices[0];
+    const p66 = sortedPrices[Math.floor(sortedPrices.length * 0.66)] || sortedPrices[sortedPrices.length - 1];
+    
+    const meanQty = qtys.reduce((a, b) => a + b, 0) / qtys.length || 0;
+
+    const tierForPrice = (v) => {
+      if (v <= p33) return 'Low value';
+      if (v <= p66) return 'Average';
+      return 'High value';
+    };
+
+    const qtyTag = (q) => {
+      if (q >= meanQty * 1.3) return 'Bulk buyers';
+      if (q <= meanQty * 0.7) return 'Low frequency';
+      return '';
+    };
+
+    return summary.map(s => {
+      const avgPrice = safeNumber(s.total_price_mean);
+      const avgQty = safeNumber(s.total_qty_mean);
+      const parts = [tierForPrice(avgPrice)];
+      const qTag = qtyTag(avgQty);
+      if (qTag) parts.push(qTag);
+
+      return {
+        id: s.cluster_,
+        count: s.customer_count,
+        avgPrice: avgPrice,
+        minPrice: s.total_price_min,
+        maxPrice: s.total_price_max,
+        avgQty: avgQty,
+        label: parts.join(' • ')
+      };
+    });
+  };
+
+  // PCA scatter helper: normalize points to box
+  const normalizePCA = (points = [], width = 420, height = 300, padding = 20) => {
+    if (!points || points.length === 0) return [];
+    const xs = points.map(p => p.pca1);
+    const ys = points.map(p => p.pca2);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+
+    const scaleX = (v) => {
+      if (maxX === minX) return width / 2;
+      return padding + ((v - minX) / (maxX - minX)) * (width - padding * 2);
+    };
+    const scaleY = (v) => {
+      if (maxY === minY) return height / 2;
+      // invert Y so higher values are up
+      return padding + (1 - (v - minY) / (maxY - minY)) * (height - padding * 2);
+    };
+
+    return points.map(p => ({
+      ...p,
+      x: scaleX(p.pca1),
+      y: scaleY(p.pca2)
+    }));
+  };
+
+  // UI state for cluster interactions
+  const [selectedCluster, setSelectedCluster] = useState(null);
+
+  // PCA plot dimensions (shared between axes and normalization)
+  const WIDTH = 420;
+  const HEIGHT = 300;
+  const PADDING = 40; // match the visual margin used for axes
+
+  // normalize visualizations once using shared dimensions
+  const pcaPoints = normalizePCA(data?.visualizations || [], WIDTH, HEIGHT, PADDING);
+  // computed summary with friendly labels
+  const summaryBy = getSummaryByCluster(data?.summary || []);
+  // tooltip for PCA points (floating HTML tooltip)
+  const [pcaTooltip, setPcaTooltip] = useState(null);
+
+  // compute PCA extents for tick labels
+  const pcaXs = (data?.visualizations || []).map(p => p.pca1 || 0);
+  const pcaYs = (data?.visualizations || []).map(p => p.pca2 || 0);
+  const pcaMinX = pcaXs.length ? Math.min(...pcaXs) : 0;
+  const pcaMaxX = pcaXs.length ? Math.max(...pcaXs) : 0;
+  const pcaMinY = pcaYs.length ? Math.min(...pcaYs) : 0;
+  const pcaMaxY = pcaYs.length ? Math.max(...pcaYs) : 0;
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg border shadow-sm">
+        <h3 className="text-lg font-semibold pb-6">ML Clusters (from model)</h3>
+        {loading && (
+          <div className="text-center py-8">
+            <div className="text-gray-500">Loading cluster results...</div>
+          </div>
+        )}
+
+        {error && (
+          <div className="text-center py-8 text-red-600">
+            Error loading model clusters: {error}
+          </div>
+        )}
+
+        {data && (
+          <div className="space-y-6">
+            {/* Summary cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {summaryBy.map((s) => (
+                <div key={s.id} className="p-4 bg-gray-50 rounded-lg border">
+                  <div className="text-sm text-gray-500">{s.label}</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-2xl font-bold">Cluster #{s.id + 1}</div>
+                    <div className="text-right">
+                      <div className="text-sm text-gray-600">Customers</div>
+                      <div className="text-xl font-semibold">{s.count}</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-sm text-gray-700">
+                    <div>Avg £{safeNumber(s.avgPrice).toFixed(0)} • Qty {safeNumber(s.avgQty).toFixed(1)}</div>
+                    <div className="text-xs text-gray-500">Range £{s.minPrice} - £{s.maxPrice}</div>
+                  </div>
+                  <div className="mt-3">
+                    <button
+                      onClick={() => setSelectedCluster(s.id)}
+                      className={`px-3 py-1 rounded-md text-sm ${selectedCluster === s.id ? 'bg-blue-600 text-white' : 'bg-white border'}`}
+                    >
+                      Filter
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Main visual row: PCA + cluster list */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* PCA Scatter */}
+              <div className="col-span-2 bg-white p-4 rounded-lg border">
+                <h4 className="font-medium text-gray-900 mb-3">PCA Scatter (customers)</h4>
+                <div className="flex flex-col gap-4 items-start">
+                  <div className="w-full">
+                    <svg width="100%" height="500" viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
+                      <rect x={0} y={0} width={WIDTH} height={HEIGHT} fill="#fff0" />
+                      {/* axes using shared padding */}
+                      <line x1={PADDING} y1={HEIGHT - PADDING} x2={WIDTH - PADDING} y2={HEIGHT - PADDING} stroke="#e5e7eb" />
+                      <line x1={PADDING} y1={PADDING} x2={PADDING} y2={HEIGHT - PADDING} stroke="#e5e7eb" />
+                      {/* axis ticks & labels (3 ticks each) */}
+                      {([0, 0.5, 1].map((t, i) => {
+                        const x = PADDING + t * (WIDTH - PADDING * 2);
+                        const val = (pcaMinX + t * (pcaMaxX - pcaMinX));
+                        return (
+                          <g key={`xt-${i}`}>
+                            <line x1={x} y1={HEIGHT - PADDING} x2={x} y2={HEIGHT - PADDING + 6} stroke="#e5e7eb" />
+                            <text x={x} y={HEIGHT - PADDING + 18} fontSize={10} textAnchor="middle" fill="#6b7280">{val.toFixed(2)}</text>
+                          </g>
+                        );
+                      }))}
+                      {([0, 0.5, 1].map((t, i) => {
+                        const y = PADDING + (1 - t) * (HEIGHT - PADDING * 2);
+                        const val = (pcaMinY + t * (pcaMaxY - pcaMinY));
+                        return (
+                          <g key={`yt-${i}`}>
+                            <line x1={PADDING - 6} y1={y} x2={PADDING} y2={y} stroke="#e5e7eb" />
+                            <text x={PADDING - 10} y={y + 4} fontSize={10} textAnchor="end" fill="#6b7280">{val.toFixed(2)}</text>
+                          </g>
+                        );
+                      }))}
+                      {/* points (use precomputed pcaPoints) */}
+                      {pcaPoints.map((p, idx) => {
+                        const isSelected = selectedCluster === null || selectedCluster === p.cluster;
+                        const color = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#6366f1'][p.cluster % 6];
+                        return (
+                          <g
+                            key={idx}
+                            style={{ opacity: isSelected ? 1 : 0.18, cursor: 'pointer' }}
+                            onMouseEnter={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setPcaTooltip({
+                                x: rect.left + rect.width / 2,
+                                y: rect.top,
+                                customer: p.customer,
+                                cluster: p.cluster,
+                                pca1: p.pca1,
+                                pca2: p.pca2
+                              });
+                            }}
+                            onMouseLeave={() => setPcaTooltip(null)}
+                          >
+                            <circle cx={p.x} cy={p.y} r={6} fill={color} stroke="#fff" strokeWidth={1.5} />
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  </div>
+
+                  {/* Small legend moved below SVG: horizontal, wrap when needed */}
+                  <div className="w-full">
+                    <div className="text-sm font-medium mb-2">Clusters</div>
+                    <div className="flex flex-wrap gap-2">
+                      {summaryBy.map((s) => (
+                        <button
+                          key={s.id}
+                          onClick={() => setSelectedCluster(s.id)}
+                          className={`flex-1 min-w-[140px] text-left p-2 rounded-md border ${selectedCluster === s.id ? 'border-blue-400 bg-blue-50' : 'bg-white'}`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div className="font-medium">#{s.id + 1}</div>
+                            <div className="text-sm text-gray-600">{s.count}</div>
+                          </div>
+                          <div className="text-xs text-gray-500">Avg £{safeNumber(s.avgPrice).toFixed(0)}</div>
+                        </button>
+                      ))}
+                      <button onClick={() => setSelectedCluster(null)} className="min-w-[140px] p-2 rounded-md border bg-white">Show all</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Clustered customers table */}
+              <div className="col-span-1 bg-white p-4 rounded-lg border overflow-auto">
+                <h4 className="font-medium text-gray-900 mb-3">Customers</h4>
+                <div className="text-sm text-gray-600 mb-2">{selectedCluster === null ? 'All clusters' : `Cluster ${selectedCluster}`}</div>
+                <div className="space-y-2">
+                  {(data.clusters || []).filter(c => selectedCluster === null ? true : c.cluster === selectedCluster).slice(0, 50).map((c, idx) => (
+                    <div key={idx} className="p-2 rounded-md border hover:bg-gray-50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-medium text-sm">{c.customer}</div>
+                          <div className="text-xs text-gray-500">{c.email} • {c.pincode}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold">£{safeNumber(c.total_price).toFixed(0)}</div>
+                          <div className="text-xs text-gray-500">Qty {safeNumber(c.total_qty)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
