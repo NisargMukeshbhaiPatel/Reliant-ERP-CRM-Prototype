@@ -6,20 +6,25 @@
 // Calculate total order value including VAT
 function calculateOrderValue(quotation) {
   if (!quotation || !quotation.items) return 0;
-
+  // Sum item totals and apply VAT per item if present. VAT could be represented
+  // as a decimal (0.2) or as a percentage (20). Handle both.
   return quotation.items.reduce((total, item) => {
-    // Handle cases where price might be null or missing properties
-    if (!item.price) return total;
+    if (!item) return total;
 
-    const base = item.price.base || 0;
-    const installation = item.price.installation || 0;
-    const logistics = item.price.logistics || 0;
-    const quantity = item.quantity || 1;
-    const vat = item.price.vat || 0;
+    const priceObj = item.price || {};
+    const base = Number(priceObj.base || 0);
+    const installation = Number(priceObj.installation || 0);
+    const logistics = Number(priceObj.logistics || 0);
+    const quantity = Number(item.quantity || 1);
 
-    const basePrice = (base + installation + logistics) * quantity;
-    const withVAT = base * vat;
-    return total + basePrice + withVAT;
+    // VAT can be decimal like 0.2 or percentage like 20
+    let vat = priceObj.vat;
+    vat = vat == null ? 0 : Number(vat);
+    if (vat > 1) vat = vat / 100;
+
+    const lineNet = (base + installation + logistics) * quantity;
+    const lineVAT = lineNet * vat;
+    return total + lineNet + lineVAT;
   }, 0);
 }
 
@@ -28,8 +33,10 @@ function getProductPreference(quotation, products) {
   if (!quotation || !quotation.items || !products) return 'Other';
 
   // Create a map of product titles to IDs for matching
+  // Build a lower-cased title map to make matching more robust
   const productTitleMap = products.reduce((map, product) => {
-    map[product.title] = product.id;
+    const title = (product.title || '').toString();
+    map[title.toLowerCase()] = product.id;
     return map;
   }, {});
 
@@ -37,14 +44,16 @@ function getProductPreference(quotation, products) {
     if (item.product && item.quantity) {
       // Normalize the product name to match against our product list
       const productTitle = item.product;
-      if (productTitleMap[productTitle]) {
-        counts[productTitle] = (counts[productTitle] || 0) + item.quantity;
+      const normalized = productTitle.toLowerCase();
+      if (productTitleMap[normalized]) {
+        const key = products.find(p => (p.title || '').toLowerCase() === normalized)?.title || productTitle;
+        counts[key] = (counts[key] || 0) + item.quantity;
       } else {
         // If exact match fails, try to find a partial match
-        const matchedProduct = products.find(p =>
-          p.title.toLowerCase().includes(productTitle.toLowerCase()) ||
-          productTitle.toLowerCase().includes(p.title.toLowerCase())
-        );
+        const matchedProduct = products.find(p => {
+          const t = (p.title || '').toLowerCase();
+          return t.includes(normalized) || normalized.includes(t);
+        });
         if (matchedProduct) {
           counts[matchedProduct.title] = (counts[matchedProduct.title] || 0) + item.quantity;
         } else {
@@ -91,8 +100,11 @@ function calculateComplexityScore(quotation) {
 function getGeographicRegion(postcode) {
   if (!postcode) return 'Unknown';
 
-  // Extract postcode area (first 1-2 letters)
-  const area = postcode.match(/^[A-Z]{1,2}/)?.[0] || 'Unknown';
+  // Normalize postcode: remove spaces and uppercase
+  const p = postcode.toString().trim().toUpperCase();
+  // Extract initial area letters (1-2 letters) - handle cases like 'EC1A 1BB'
+  const areaMatch = p.match(/^[A-Z]{1,2}/);
+  const area = areaMatch ? areaMatch[0] : 'Unknown';
 
   // Map common UK postcode areas to regions
   const regionMap = {
@@ -125,6 +137,26 @@ function getGeographicRegion(postcode) {
   };
 
   return regionMap[area] || `${area} Area`;
+}
+
+// Utility: compute customer frequency (repeat vs one-time) from all quotations
+function computeCustomerFrequency(quotations) {
+  const freq = { repeat: 0, one_time: 0 };
+  if (!quotations || quotations.length === 0) return freq;
+
+  const counts = {};
+  quotations.forEach(q => {
+    const id = q?.customer?.id || q?.customerId || null;
+    if (!id) return;
+    counts[id] = (counts[id] || 0) + 1;
+  });
+
+  Object.values(counts).forEach(c => {
+    if (c > 1) freq.repeat++;
+    else freq.one_time++;
+  });
+
+  return freq;
 }
 
 function countQuotationsByStatus(quotations) {
@@ -362,6 +394,13 @@ export function clusterCustomers(quotations, products) {
     }))
   };
 
+  // Add frequency data (repeat vs one-time) derived from all quotations
+  const frequency = computeCustomerFrequency(quotations);
+  chartData.frequency = [
+    { name: 'Repeat Customers', value: frequency.repeat },
+    { name: 'One-time Customers', value: frequency.one_time }
+  ];
+
   return {
     clusters,
     stats,
@@ -421,6 +460,22 @@ export function getCustomerInsights(clusteringResult) {
       recommendation: 'Consider targeted marketing campaigns in high-performing regions'
     });
   }
+
+    // Frequency insight (repeat vs one-time) if available in chartData
+    if (chartData.frequency && Array.isArray(chartData.frequency)) {
+      const repeat = chartData.frequency.find(f => /repeat/i.test(f.name))?.value || 0;
+      const oneTime = chartData.frequency.find(f => /one/i.test(f.name))?.value || 0;
+      const totalFreq = repeat + oneTime;
+      if (totalFreq > 0) {
+        insights.push({
+          type: 'frequency',
+          title: 'Customer Frequency',
+          description: `${repeat} repeat customers and ${oneTime} one-time customers`,
+          counts: { repeat, one_time: oneTime },
+          recommendation: 'Focus retention efforts on repeat customers and identify opportunities to convert one-time buyers'
+        });
+      }
+    }
 
   return insights;
 }

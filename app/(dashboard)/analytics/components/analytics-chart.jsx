@@ -9,6 +9,7 @@ import {
   MapPin,
   Lightbulb,
   Users,
+  User,
   DollarSign
 } from "lucide-react";
 import { Button } from "@/components/button";
@@ -209,18 +210,26 @@ function VerticalBarChart({ data, colors, title }) {
 
       {/* Chart with Y-axis and horizontal scroll */}
       <div className="flex bg-gray-50 rounded-lg p-4">
-        {/* Y-axis (fixed) */}
+        {/* Y-axis (dynamic ticks) */}
         <div className="flex flex-col justify-between h-48 pr-3 py-2 flex-shrink-0">
           {(() => {
-            // Calculate Y-axis steps of 5
-            const maxStep = Math.ceil(maxValue / 5) * 5;
-            const steps = [];
-            for (let i = maxStep; i >= 0; i -= 5) {
-              steps.push(i);
+            // Use a dynamic tick count to avoid labels overflowing.
+            const tickCount = 5; // desired number of ticks (including zero)
+            // compute step based on maxValue; ensure at least 1 to avoid division by zero
+            const rawStep = Math.max(1, Math.ceil(maxValue / tickCount));
+            // compute a maxTick that's a multiple of rawStep and >= maxValue
+            const maxTick = rawStep * tickCount;
+            const ticks = [];
+            for (let i = maxTick; i >= 0; i -= rawStep) {
+              ticks.push(i);
             }
-            return steps.map((step, index) => (
-              <div key={step} className="flex items-center">
-                <span className="text-xs text-gray-600 font-medium w-6 text-right">{step}</span>
+
+            // If maxValue is small, reduce ticks to avoid crowding
+            const renderedTicks = ticks.length > tickCount + 1 ? ticks.slice(0, tickCount + 1) : ticks;
+
+            return renderedTicks.map((tick) => (
+              <div key={tick} className="flex items-center">
+                <span className="text-xs text-gray-600 font-medium w-6 text-right">{tick}</span>
                 <div className="w-2 h-px bg-gray-300 ml-1"></div>
               </div>
             ));
@@ -230,15 +239,18 @@ function VerticalBarChart({ data, colors, title }) {
         {/* Scrollable chart area */}
         <div className="flex-1 overflow-x-auto">
           <div className="relative" style={{ minWidth: `${displayData.length * 40}px` }}>
-            {/* Grid lines */}
+            {/* Grid lines (match Y-axis ticks) */}
             <div className="absolute inset-0 flex flex-col justify-between py-2">
               {(() => {
-                const maxStep = Math.ceil(maxValue / 5) * 5;
-                const steps = [];
-                for (let i = maxStep; i >= 0; i -= 5) {
-                  steps.push(i);
+                const tickCount = 5;
+                const rawStep = Math.max(1, Math.ceil(maxValue / tickCount));
+                const maxTick = rawStep * tickCount;
+                const ticks = [];
+                for (let i = maxTick; i >= 0; i -= rawStep) {
+                  ticks.push(i);
                 }
-                return steps.map((step, index) => (
+                const renderedTicks = ticks.length > tickCount + 1 ? ticks.slice(0, tickCount + 1) : ticks;
+                return renderedTicks.map((step) => (
                   <div key={step} className="w-full h-px bg-gray-200 opacity-50"></div>
                 ));
               })()}
@@ -885,6 +897,73 @@ function InsightsAndComplexityTab({ insights, complexityData, complexityClusters
 
   return (
     <div className="space-y-8">
+      {/* Customer Frequency Section */}
+      <div className="space-y-4">
+        <div className="border-b pb-3">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Users className="w-6 h-6" />
+            Customer Frequency
+          </h2>
+          <p className="text-gray-600 mt-1">Breakdown of repeat vs one-time customers</p>
+        </div>
+
+        {(() => {
+          // Try to extract counts from insights if provided
+          let repeatCount = null;
+          let oneTimeCount = null;
+
+          if (Array.isArray(insights)) {
+            const freq = insights.find(i => i.type === 'frequency' || i.type === 'customer_frequency' || i.type === 'repeat');
+            if (freq) {
+              if (freq.counts && typeof freq.counts === 'object') {
+                repeatCount = freq.counts.repeat || freq.counts.repeating || null;
+                oneTimeCount = freq.counts.one_time || freq.counts.oneTime || freq.counts.one || null;
+              }
+              repeatCount = repeatCount ?? freq.repeatCount ?? freq.repeatingCount ?? null;
+              oneTimeCount = oneTimeCount ?? freq.oneTimeCount ?? freq.one_time_count ?? null;
+            }
+          }
+
+          // Fallback to heuristic using complexityClusters if available
+          if ((repeatCount === null || oneTimeCount === null) && complexityClusters) {
+            const complex = Array.isArray(complexityClusters.complex) ? complexityClusters.complex : [];
+            const simple = Array.isArray(complexityClusters.simple) ? complexityClusters.simple : [];
+            repeatCount = repeatCount ?? complex.length;
+            oneTimeCount = oneTimeCount ?? simple.length;
+          }
+
+          repeatCount = typeof repeatCount === 'number' ? repeatCount : 0;
+          oneTimeCount = typeof oneTimeCount === 'number' ? oneTimeCount : 0;
+          const total = repeatCount + oneTimeCount;
+
+          return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-4 bg-white rounded-lg border flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-gray-500">Repeat Customers</div>
+                  <div className="text-2xl font-bold">{repeatCount}</div>
+                  <div className="text-xs text-gray-500">{total > 0 ? ((repeatCount / total) * 100).toFixed(1) : '0.0'}% of customers</div>
+                </div>
+                <div className="flex items-center justify-center w-12 h-12 bg-blue-50 rounded-full">
+                  <Users className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+
+              <div className="p-4 bg-white rounded-lg border flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-gray-500">One-time Customers</div>
+                  <div className="text-2xl font-bold">{oneTimeCount}</div>
+                  <div className="text-xs text-gray-500">{total > 0 ? ((oneTimeCount / total) * 100).toFixed(1) : '0.0'}% of customers</div>
+                </div>
+                <div className="flex items-center justify-center w-12 h-12 bg-green-50 rounded-full">
+                  <User className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
       {/* Order Complexity Section */}
       <div className="space-y-4">
         <div className="border-b pb-3">
