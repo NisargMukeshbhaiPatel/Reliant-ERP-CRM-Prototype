@@ -202,7 +202,8 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
     e.preventDefault()
     setUpdatingCustomer(true)
     try {
-      await updateCustomer(quotation.customer.id, customerForm)
+      const res = await updateCustomer(quotation.customer.id, customerForm)
+      if (res.error) throw new Error(res.error)
       //temp update the quotation object with new customer data
       quotation.customer = {
         ...quotation.customer,
@@ -219,8 +220,7 @@ export function QuotationDialog({ quotation, open, onOpenChange }) {
       router.refresh()
     } catch (error) {
       toast({
-        title: "Failed to update customer",
-        description: error.message,
+        title: error.message || "Failed to update customer",
         variant: "destructive"
       })
       console.error("Failed to update customer:", error)

@@ -148,7 +148,7 @@ export default function AppSidebar() {
                   <div className="flex flex-col gap-1 min-w-0 flex-1">
                     <span className="text-sm font-medium truncate">{user.name}</span>
                     <Badge variant="secondary" className="text-xs h-5 w-fit">
-                      {user.expand.role.title}
+                      {user.expand.role?.title}
                     </Badge>
                   </div>
                   <TooltipProvider>

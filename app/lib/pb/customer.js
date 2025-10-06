@@ -1,5 +1,6 @@
 "use server"
 import { globalPB as pb } from "./global";
+import { prettifyPBError } from "../pretty-print";
 
 export async function createCustomer(customerData) {
   try {
@@ -26,8 +27,10 @@ export async function updateCustomer(customerId, customerData) {
     });
     return customer;
   } catch (error) {
-    console.error('Error updating customer:', error);
-    throw new Error('Failed to update customer');
+    console.error("PRETTY FIY", prettifyPBError(error.originalError.data))
+    return {
+      error: prettifyPBError(error.originalError.data || "")
+    }
   }
 }
 
